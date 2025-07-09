@@ -56,7 +56,7 @@ ROOT_URLCONF = 'nagoyameshi.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # プロジェクトレベルのtemplatesディレクトリを追加
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

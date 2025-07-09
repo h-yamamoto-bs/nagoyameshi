@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAGOYAMESHI</title>
+</head>
+<body>
+    <header>
+        <div>
+            <!-- ハンバーガーメニュー -->
+            <div>
+                <img src="" alt="[]">
+            </div>
+            <!-- 検索バー -->
+            <h1>NAGOYAMESHI</h1>
+            <div>
+                <input type="text" placeholder="検索">
+                <button type="submit">検索</button>
+            </div>
+            <!-- アプリロゴ -->
+            <div>
+                <img src="" alt="アプリロゴ">
+            </div>
+            <!-- ログインボタン -->
+            {% if user.is_authenticated %}
+            <div>
+                <p>NAGOYAMESHIにようこそ</p>
+                <div>
+                    <a href="/nagoyameshi/templates/accounts/login.html">ログイン</a>
+                    <a href="/nagoyameshi/templates/accounts/register.html">新規登録</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 NAGOYAMESHI</p>
+    </footer>
+</body>
+</html>
