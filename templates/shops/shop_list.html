@@ -4,11 +4,39 @@
     <div>
         {% for shop in shops %}
             <a href="{% url 'shops:shop_detail' shop.pk %}" style="text-decoration: none; color: inherit;">
-                <div class="shop-card" style="cursor: pointer; padding: 15px; border: 1px solid #ddd; margin: 10px 0; border-radius: 5px;">
-                    <h2>{{ shop.name }}</h2>
-                    <p>{{ shop.address }}</p>
-                    <p>{{ shop.phone_number }}</p>
-                    <p>{{ shop.seat_count }}席</p>
+                <div class="shop-card" style="cursor: pointer; padding: 15px; border: 1px solid #ddd; margin: 10px 0; border-radius: 5px; display: flex; align-items: center;">
+                    <!-- 複数画像表示部分（最大3枚） -->
+                    <div class="shop-images" style="margin-right: 15px; flex-shrink: 0;">
+                        {% if shop.images.exists %}
+                            <div style="display: flex; gap: 5px; width: 250px; height: 80px;">
+                                {% for image in shop.images.all|slice:":3" %}
+                                    <img src="{{ image.image.url }}"
+                                         alt="{{ shop.name }}"
+                                         style="width: 80px; height: 80px; object-fit: cover; border-radius: 5px; flex-shrink: 0;">
+                                {% endfor %}
+                                {% if shop.images.count > 3 %}
+                                    <div style="width: 80px; height: 80px; background-color: rgba(0,0,0,0.7); border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                        +{{ shop.images.count|add:"-3" }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div style="width: 80px; height: 80px; background-color: #f0f0f0; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #999;">
+                                画像なし
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 店舗情報部分 -->
+                    <div class="shop-info" style="flex-grow: 1;">
+                        <h2 style="margin: 0 0 10px 0;">{{ shop.name }}</h2>
+                        <p style="margin: 5px 0; color: #666;">📍 {{ shop.address }}</p>
+                        <p style="margin: 5px 0; color: #666;">📞 {{ shop.phone_number }}</p>
+                        <p style="margin: 5px 0; color: #666;">🪑 {{ shop.seat_count }}席</p>
+                        {% if shop.images.count > 0 %}
+                            <p style="margin: 5px 0; color: #999; font-size: 12px;">📷 {{ shop.images.count }}枚の写真</p>
+                        {% endif %}
+                    </div>
                 </div>
             </a>
         {% endfor %}
