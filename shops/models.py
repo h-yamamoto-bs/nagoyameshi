@@ -14,3 +14,13 @@ class Shop(models.Model):
 
     def __str__(self):
         return f"{self.name}（{self.address}）"
+
+class Image(models.Model):
+    shop = models.ForeignKey(Shop, related_name='images', on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='images/')
+
+    class Meta:
+        db_table = 'images'
+
+    def __str__(self):
+        return f"Image for {self.shop.name}"
