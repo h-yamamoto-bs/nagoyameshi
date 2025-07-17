@@ -10,10 +10,9 @@
         <div>
             <!-- ハンバーガーメニュー -->
             <div>
-                <img src="" alt="[]">
+                <img src="" alt="ハンバーガーメニュー">
             </div>
             <!-- 検索バー -->
-            <h1>NAGOYAMESHI</h1>
             <div>
                 <input type="text" placeholder="検索">
                 <button type="submit">検索</button>
@@ -22,13 +21,15 @@
             <div>
                 <img src="" alt="アプリロゴ">
             </div>
+        </div>
+        <div>
             <!-- ログインボタン -->
-            {% if user.is_authenticated %}
+            {% if not user.is_authenticated %}
             <div>
                 <p>NAGOYAMESHIにようこそ</p>
                 <div>
-                    <a href="/nagoyameshi/templates/accounts/login.html">ログイン</a>
-                    <a href="/nagoyameshi/templates/accounts/register.html">新規登録</a>
+                    <a href="{% url 'accounts:login' %}">ログイン</a>
+                    <a href="{% url 'accounts:register' %}">新規登録</a>
                 </div>
             </div>
             {% endif %}

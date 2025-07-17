@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div>
+    <!-- パンクズリスト -->
+    <div>
+        <nav>
+            <span> &gt; </span>
+            <a href="{% url 'shops:shop_list' %}">ホーム</a>
+            <span> &gt; </span>
+            <span>{{ shop.name }}</span>
+        </nav>
+    </div>
+
+    <div>
+        <h2>{{ shop.name }}</h2>
+        <p>{{ shop.address }}</p>
+        <p>{{ shop.phone_number }}</p>
+        <p>{{ shop.seat_count }}席</p>
+    </div>
+</div>
+{% endblock %}

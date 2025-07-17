@@ -8,7 +8,7 @@
 <body>
     <div>
         <div>
-            <a href="{% url 'accounts:register' %}">新規登録はこちらから ></a>
+            <a href="{% url 'accounts:login' %}">ログインはこちらから ></a>
         </div>
         <div>
             <!-- メールアドレス -->
@@ -21,11 +21,13 @@
             <input type="password" id="password" name="password" required>
         </div>
         <div>
-            <button type="submit">ログイン</button>
+            <!-- パスワード確認 -->
+            <label for="password_confirm">パスワード確認:</label>
+            <input type="password" id="password_confirm" name="password_confirm" required>
         </div>
-    </div>
-    <div>
-        <a href="">パスワードを忘れた方はこちら ></a>
+        <div>
+            <button type="submit">新規登録</button>
+        </div>
     </div>
 </body>
 </html>

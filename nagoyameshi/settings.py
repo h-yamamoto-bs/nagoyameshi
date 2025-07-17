@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions', # 開発支援ツール
     'accounts',  # アカウント管理アプリ
     'shops',     # ショップ管理アプリ
 ]
