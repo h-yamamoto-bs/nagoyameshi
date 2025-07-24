@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NAGOYAMESHI</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
@@ -14,8 +15,10 @@
             </div>
             <!-- 検索バー -->
             <div>
-                <input type="text" placeholder="検索">
-                <button type="submit">検索</button>
+                <form action="{% url 'shops:shop_search' %}" method="GET" id="search-form">
+                    <input id="search-input" type="text" name="q" placeholder="検索" value="{{ request.GET.q }}">
+                    <button id="search-button" type="submit">検索</button>
+                </form>
             </div>
             <!-- アプリロゴ -->
             <div>
@@ -43,5 +46,7 @@
     <footer>
         <p>&copy; 2025 NAGOYAMESHI</p>
     </footer>
+
+    <script src="main.js"></script>
 </body>
 </html>
