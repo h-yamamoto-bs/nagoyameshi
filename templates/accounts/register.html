@@ -1,33 +1,896 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAGOYAMESHI</title>
-</head>
-<body>
-    <div>
-        <div>
-            <a href="{% url 'accounts:login' %}">ログインはこちらから ></a>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-container">
+    <!-- =================================== -->
+    <!-- 背景デコレーション -->
+    <!-- =================================== -->
+    <div class="auth-background">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+
+    <!-- =================================== -->
+    <!-- メインコンテンツ -->
+    <!-- =================================== -->
+    <div class="auth-content">
+        <!-- =================================== -->
+        <!-- 登録カード -->
+        <!-- =================================== -->
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon">
+                    <i data-feather="user-plus"></i>
+                </div>
+                <h1 class="auth-title">NAGOYAMESHIへようこそ</h1>
+                <p class="auth-subtitle">新規登録をして、名古屋の美食を発見する旅を始めましょう</p>
+            </div>
+
+            <!-- =================================== -->
+            <!-- メッセージ表示 -->
+            <!-- =================================== -->
+            {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="message-item {% if message.tags == 'error' %}message-error{% elif message.tags == 'success' %}message-success{% endif %}">
+                            <i data-feather="{% if message.tags == 'error' %}alert-circle{% elif message.tags == 'success' %}check-circle{% else %}info{% endif %}"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- =================================== -->
+            <!-- 登録フォーム -->
+            <!-- =================================== -->
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        <i data-feather="user"></i>
+                        お名前
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            value="{{ name }}"
+                            class="form-input"
+                            placeholder="山田太郎"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="smile"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="furigana" class="form-label">
+                        <i data-feather="type"></i>
+                        フリガナ
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="furigana" 
+                            name="furigana" 
+                            value="{{ furigana }}"
+                            class="form-input"
+                            placeholder="ヤマダタロウ"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="edit-3"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i data-feather="mail"></i>
+                        メールアドレス
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            value="{{ email }}"
+                            class="form-input"
+                            placeholder="your@email.com"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="at-sign"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i data-feather="lock"></i>
+                        パスワード
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-input"
+                            placeholder="••••••••"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="key"></i>
+                        </div>
+                    </div>
+                    <div class="password-hint">
+                        <i data-feather="info"></i>
+                        8文字以上で英数字を含んでください
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password_confirm" class="form-label">
+                        <i data-feather="check-circle"></i>
+                        パスワード（確認）
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="password_confirm" 
+                            name="password_confirm" 
+                            class="form-input"
+                            placeholder="••••••••"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="shield"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-agreement">
+                    <label class="checkbox-container">
+                        <input type="checkbox" name="agree_terms" required>
+                        <span class="checkmark"></span>
+                        <span class="agreement-text">
+                            <a href="#" class="terms-link">利用規約</a>と<a href="#" class="terms-link">プライバシーポリシー</a>に同意します
+                        </span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-register">
+                    <span>アカウントを作成</span>
+                    <i data-feather="arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- =================================== -->
+            <!-- 関連リンク -->
+            <!-- =================================== -->
+            <div class="auth-footer">
+                <p>すでにアカウントをお持ちの方</p>
+                <a href="{% url 'accounts:login' %}" class="btn-login-link">
+                    <i data-feather="log-in"></i>
+                    ログイン
+                </a>
+            </div>
         </div>
-        <div>
-            <!-- メールアドレス -->
-            <label for="email">メールアドレス:</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        <div>
-            <!-- パスワード -->
-            <label for="password">パスワード:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div>
-            <!-- パスワード確認 -->
-            <label for="password_confirm">パスワード確認:</label>
-            <input type="password" id="password_confirm" name="password_confirm" required>
-        </div>
-        <div>
-            <button type="submit">新規登録</button>
+
+        <!-- =================================== -->
+        <!-- サイドコンテンツ -->
+        <!-- =================================== -->
+        <div class="auth-side">
+            <div class="side-content">
+                <div class="side-icon">
+                    <i data-feather="map-pin"></i>
+                </div>
+                <h2>名古屋グルメの世界へ</h2>
+                <p>NAGOYAMESHIに登録して、地元の隠れた名店や話題のレストランを発見し、自分だけのグルメマップを作りましょう。</p>
+                <div class="benefits-list">
+                    <div class="benefit-item">
+                        <i data-feather="bookmark"></i>
+                        <div>
+                            <h4>お気に入り機能</h4>
+                            <p>気になるお店を保存して後で確認</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <i data-feather="edit"></i>
+                        <div>
+                            <h4>レビュー投稿</h4>
+                            <p>実際の体験を他のユーザーと共有</p>
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <i data-feather="users"></i>
+                        <div>
+                            <h4>コミュニティ</h4>
+                            <p>グルメ好きとの情報交換</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+<!-- =================================== -->
+<!-- 新規登録ページ専用CSS -->
+<!-- =================================== -->
+<style>
+/* =================================== */
+/* 基本レイアウト（login.htmlと共通） */
+/* =================================== */
+.auth-container {
+    min-height: calc(100vh - 4rem);
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    overflow: hidden;
+}
+
+.auth-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.floating-shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 8s ease-in-out infinite;
+}
+
+.shape-1 {
+    width: 200px;
+    height: 200px;
+    top: -100px;
+    right: -100px;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 150px;
+    height: 150px;
+    bottom: -75px;
+    left: -75px;
+    animation-delay: 2s;
+}
+
+.shape-3 {
+    width: 100px;
+    height: 100px;
+    top: 20%;
+    left: 10%;
+    animation-delay: 4s;
+}
+
+.shape-4 {
+    width: 80px;
+    height: 80px;
+    bottom: 20%;
+    right: 10%;
+    animation-delay: 6s;
+}
+
+@keyframes float {
+    0%, 100% { 
+        transform: translateY(0px) rotate(0deg); 
+        opacity: 0.1;
+    }
+    50% { 
+        transform: translateY(-20px) rotate(180deg); 
+        opacity: 0.2;
+    }
+}
+
+.auth-content {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 4rem);
+    align-items: center;
+    gap: 4rem;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* =================================== */
+/* 認証カード（登録用） */
+/* =================================== */
+.auth-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 2rem;
+    padding: 3rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 600px;
+    width: 100%;
+    justify-self: end;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-icon {
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+.auth-icon i {
+    width: 2rem;
+    height: 2rem;
+}
+
+.auth-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 0.75rem 0;
+    background: linear-gradient(135deg, var(--gray-800), var(--gray-600));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-subtitle {
+    color: var(--gray-600);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* =================================== */
+/* メッセージ表示 */
+/* =================================== */
+.messages-container {
+    margin-bottom: 1.5rem;
+}
+
+.message-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+.message-error {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.message-success {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =================================== */
+/* フォームスタイル */
+/* =================================== */
+.auth-form {
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 1rem;
+    font-size: 1rem;
+    background: white;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    transition: color 0.3s ease;
+}
+
+.form-input:focus + .input-icon {
+    color: var(--primary);
+}
+
+/* =================================== */
+/* パスワードヒント */
+/* =================================== */
+.password-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.password-hint i {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+/* =================================== */
+/* 利用規約同意 */
+/* =================================== */
+.form-agreement {
+    margin-bottom: 2rem;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    line-height: 1.5;
+}
+
+.checkbox-container input {
+    display: none;
+}
+
+.checkmark {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--gray-300);
+    border-radius: 0.375rem;
+    position: relative;
+    transition: all 0.3s ease;
+    margin-top: 0.125rem;
+    flex-shrink: 0;
+}
+
+.checkbox-container input:checked + .checkmark {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkbox-container input:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.agreement-text {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.terms-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.terms-link:hover {
+    text-decoration: underline;
+}
+
+/* =================================== */
+/* ボタンスタイル */
+/* =================================== */
+.btn-register {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+}
+
+.btn-register:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+}
+
+.btn-register:active {
+    transform: translateY(0);
+}
+
+/* =================================== */
+/* フッター */
+/* =================================== */
+.auth-footer {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.auth-footer p {
+    margin: 0 0 1rem 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.btn-login-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--gray-50), white);
+    color: var(--gray-700);
+    text-decoration: none;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+}
+
+.btn-login-link:hover {
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* =================================== */
+/* サイドコンテンツ */
+/* =================================== */
+.auth-side {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.side-content {
+    max-width: 400px;
+}
+
+.side-icon {
+    width: 5rem;
+    height: 5rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.side-icon i {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.side-content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+}
+
+.side-content p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+    margin: 0 0 2rem 0;
+}
+
+.benefits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: left;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.benefit-item i {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.benefit-item h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.benefit-item p {
+    margin: 0;
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+/* =================================== */
+/* レスポンシブデザイン */
+/* =================================== */
+@media (max-width: 1024px) {
+    .auth-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1rem;
+    }
+    
+    .auth-card {
+        justify-self: center;
+        max-width: 600px;
+    }
+    
+    .auth-side {
+        order: -1;
+    }
+    
+    .side-content h2 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-card {
+        padding: 2rem;
+        border-radius: 1.5rem;
+    }
+    
+    .auth-title {
+        font-size: 1.75rem;
+    }
+    
+    .side-content {
+        max-width: 100%;
+    }
+    
+    .side-content h2 {
+        font-size: 1.75rem;
+    }
+    
+    .side-content p {
+        font-size: 1rem;
+    }
+    
+    .benefits-list {
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 0.5rem;
+    }
+    
+    .auth-card {
+        padding: 1.5rem;
+    }
+    
+    .auth-title {
+        font-size: 1.5rem;
+    }
+    
+    .auth-subtitle {
+        font-size: 0.875rem;
+    }
+    
+    .side-content h2 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<script>
+// Feather Iconsの初期化
+feather.replace();
+
+// フォームアニメーション
+document.addEventListener('DOMContentLoaded', function() {
+    const authCard = document.querySelector('.auth-card');
+    const formInputs = document.querySelectorAll('.form-input');
+    
+    // カードのフェードインアニメーション
+    authCard.style.opacity = '0';
+    authCard.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        authCard.style.transition = 'all 0.6s ease-out';
+        authCard.style.opacity = '1';
+        authCard.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // インプットフィールドのアニメーション
+    formInputs.forEach((input, index) => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+    
+    // パスワード強度チェック（将来的な拡張）
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('password_confirm');
+    
+    if (passwordInput && confirmInput) {
+        function checkPasswordMatch() {
+            if (confirmInput.value && passwordInput.value !== confirmInput.value) {
+                confirmInput.style.borderColor = '#ef4444';
+            } else {
+                confirmInput.style.borderColor = 'var(--gray-200)';
+            }
+        }
+        
+        passwordInput.addEventListener('input', checkPasswordMatch);
+        confirmInput.addEventListener('input', checkPasswordMatch);
+    }
+});
+</script>
+{% endblock %}
+                    メールアドレス
+                </label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       value="{{ email }}"
+                       required
+                       style="width: 100%; padding: 12px; border: 1px solid #ddd; 
+                              border-radius: 5px; font-size: 16px;">
+            </div>
+
+            <!-- =================================== -->
+            <!-- パスワード入力フィールド -->
+            <!-- =================================== -->
+            <div style="margin-bottom: 20px;">
+                <label for="password" style="display: block; margin-bottom: 5px; 
+                                             font-weight: bold; color: #333;">
+                    パスワード
+                </label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       required
+                       style="width: 100%; padding: 12px; border: 1px solid #ddd; 
+                              border-radius: 5px; font-size: 16px;">
+                <!-- パスワード要件の説明 -->
+                <small style="color: #666; font-size: 12px;">8文字以上で入力してください</small>
+            </div>
+
+            <!-- =================================== -->
+            <!-- パスワード確認フィールド -->
+            <!-- =================================== -->
+            <div style="margin-bottom: 30px;">
+                <label for="password_confirm" style="display: block; margin-bottom: 5px; 
+                                                     font-weight: bold; color: #333;">
+                    パスワード確認
+                </label>
+                <input type="password" 
+                       id="password_confirm" 
+                       name="password_confirm" 
+                       required
+                       style="width: 100%; padding: 12px; border: 1px solid #ddd; 
+                              border-radius: 5px; font-size: 16px;">
+            </div>
+
+            <!-- =================================== -->
+            <!-- 新規登録ボタン -->
+            <!-- =================================== -->
+            <button type="submit" 
+                    style="width: 100%; padding: 12px; background: #28a745; color: white; 
+                           border: none; border-radius: 5px; font-size: 16px; 
+                           font-weight: bold; cursor: pointer;">
+                新規登録
+            </button>
+        </form>
+
+        <!-- =================================== -->
+        <!-- ログインリンク -->
+        <!-- =================================== -->
+        <div style="text-align: center;">
+            <a href="{% url 'accounts:login' %}" 
+               style="color: #007bff; text-decoration: none; font-weight: bold;">
+                ログインはこちらから →
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- =================================== -->
+<!-- CSS（ホバーエフェクトとバリデーション） -->
+<!-- =================================== -->
+<style>
+/* 新規登録ボタンのホバーエフェクト */
+button[type="submit"]:hover {
+    background: #218838 !important;  /* より濃い緑色 */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* 入力フィールドのフォーカス効果 */
+input:focus {
+    outline: none;
+    border-color: #28a745;  /* 緑色のボーダー */
+    box-shadow: 0 0 0 2px rgba(40,167,69,0.25);  /* 緑色のシャドウ */
+}
+
+/* リンクのホバーエフェクト */
+a:hover {
+    text-decoration: underline !important;
+}
+</style>
+{% endblock %}

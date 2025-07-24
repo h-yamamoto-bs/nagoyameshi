@@ -5,48 +5,690 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NAGOYAMESHI</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts for beautiful typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Feather Icons for clean icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body>
-    <header>
-        <div>
-            <!-- ハンバーガーメニュー -->
-            <div>
-                <img src="" alt="ハンバーガーメニュー">
+    <!-- =================================== -->
+    <!-- ナビゲーションヘッダー -->
+    <!-- =================================== -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- =================================== -->
+            <!-- ブランドロゴ（左側） -->
+            <!-- =================================== -->
+            <div class="brand">
+                <a href="{% url 'shops:shop_list' %}" class="brand-link">
+                    <div class="logo-wrapper">
+                        <div class="logo-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <span class="brand-text">NAGOYAMESHI</span>
+                    </div>
+                </a>
             </div>
-            <!-- 検索バー -->
-            <div>
-                <form action="{% url 'shops:shop_search' %}" method="GET" id="search-form">
-                    <input id="search-input" type="text" name="q" placeholder="検索" value="{{ request.GET.q }}">
-                    <button id="search-button" type="submit">検索</button>
+            
+            <!-- =================================== -->
+            <!-- 検索バー（中央） -->
+            <!-- =================================== -->
+            <div class="search-container">
+                <form action="{% url 'shops:search' %}" method="GET" id="search-form" class="search-form">
+                    <div class="search-input-wrapper">
+                        <i data-feather="search" class="search-icon"></i>
+                        <input 
+                            id="search-input" 
+                            type="text" 
+                            name="q" 
+                            placeholder="店舗名・住所・電話番号で検索" 
+                            value="{{ request.GET.q }}"
+                            class="search-input">
+                        <button type="submit" class="search-button">
+                            <i data-feather="arrow-right"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
-            <!-- アプリロゴ -->
-            <div>
-                <img src="" alt="アプリロゴ">
+            
+            <!-- =================================== -->
+            <!-- ユーザーメニュー（右側） -->
+            <!-- =================================== -->
+            <div class="user-menu">
+                {% if user.is_authenticated %}
+                    <!-- ログイン済みユーザー -->
+                    <div class="user-profile">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <span>{{ user.email|first|upper }}</span>
+                            </div>
+                            <div class="user-details">
+                                <span class="user-email">{{ user.email }}</span>
+                                <span class="user-status">オンライン</span>
+                            </div>
+                        </div>
+                        
+                        <div class="user-actions">
+                            <!-- マイページボタン -->
+                            <a href="#" class="btn btn-secondary">
+                                <i data-feather="user"></i>
+                                <span>マイページ</span>
+                            </a>
+                            
+                            <!-- ログアウトボタン -->
+                            <a href="{% url 'accounts:logout' %}" id="logout-button" class="btn btn-danger">
+                                <i data-feather="log-out"></i>
+                                <span>ログアウト</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                {% else %}
+                    <!-- 未ログインユーザー -->
+                    <div class="auth-menu">
+                        <p class="welcome-text">NAGOYAMESHIへようこそ</p>
+                        <div class="auth-buttons">
+                            <a href="{% url 'accounts:login' %}" class="btn btn-outline">
+                                <i data-feather="log-in"></i>
+                                <span>ログイン</span>
+                            </a>
+                            <a href="{% url 'accounts:register' %}" class="btn btn-primary">
+                                <i data-feather="user-plus"></i>
+                                <span>新規登録</span>
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
-        <div>
-            <!-- ログインボタン -->
-            {% if not user.is_authenticated %}
-            <div>
-                <p>NAGOYAMESHIにようこそ</p>
-                <div>
-                    <a href="{% url 'accounts:login' %}">ログイン</a>
-                    <a href="{% url 'accounts:register' %}">新規登録</a>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </header>
+    </nav>
 
-    <main>
+    <!-- =================================== -->
+    <!-- メインコンテンツ -->
+    <!-- =================================== -->
+    <main class="main-content">
         {% block content %}{% endblock %}
     </main>
 
-    <footer>
-        <p>&copy; 2025 NAGOYAMESHI</p>
+    <!-- =================================== -->
+    <!-- フッター -->
+    <!-- =================================== -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <span>NAGOYAMESHI</span>
+                </div>
+                <p class="footer-description">名古屋の美味しい店舗を見つけよう</p>
+            </div>
+            
+            <div class="footer-links">
+                <div class="footer-section">
+                    <h4>サービス</h4>
+                    <ul>
+                        <li><a href="#">店舗検索</a></li>
+                        <li><a href="#">レビュー</a></li>
+                        <li><a href="#">予約</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>サポート</h4>
+                    <ul>
+                        <li><a href="#">ヘルプ</a></li>
+                        <li><a href="#">お問い合わせ</a></li>
+                        <li><a href="#">利用規約</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2025 NAGOYAMESHI. All rights reserved.</p>
+        </div>
     </footer>
 
+    <!-- =================================== -->
+    <!-- 超オシャレなCSS -->
+    <!-- =================================== -->
+    <style>
+    /* =================================== */
+    /* 基本設定とリセット */
+    /* =================================== */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :root {
+        /* カラーパレット */
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+        --secondary: #06b6d4;
+        --secondary-dark: #0891b2;
+        --danger: #ef4444;
+        --danger-dark: #dc2626;
+        --success: #10b981;
+        --warning: #f59e0b;
+        
+        /* グレースケール */
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        
+        /* フォント */
+        --font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        
+        /* シャドウ */
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        
+        /* アニメーション */
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+        font-family: var(--font-family);
+        line-height: 1.6;
+        color: var(--gray-700);
+        background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 100%);
+        min-height: 100vh;
+    }
+
+    /* =================================== */
+    /* ナビゲーションバー */
+    /* =================================== */
+    .navbar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px) saturate(180%);
+        border-bottom: 1px solid var(--gray-200);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 4rem;
+    }
+
+    /* =================================== */
+    /* ブランドロゴ */
+    /* =================================== */
+    .brand-link {
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .brand-link:hover {
+        transform: translateY(-1px);
+    }
+
+    .logo-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .logo-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .brand-text {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        letter-spacing: -0.025em;
+    }
+
+    /* =================================== */
+    /* 検索バー */
+    /* =================================== */
+    .search-container {
+        flex: 1;
+        max-width: 28rem;
+        margin: 0 2rem;
+    }
+
+    .search-form {
+        position: relative;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        background: white;
+        border: 2px solid var(--gray-200);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+        overflow: hidden;
+    }
+
+    .search-input-wrapper:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1), var(--shadow-md);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        color: var(--gray-400);
+        width: 1.25rem;
+        height: 1.25rem;
+        z-index: 10;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.875rem 1rem 0.875rem 2.75rem;
+        border: none;
+        outline: none;
+        font-size: 0.875rem;
+        color: var(--gray-700);
+        background: transparent;
+    }
+
+    .search-input::placeholder {
+        color: var(--gray-400);
+    }
+
+    .search-button {
+        padding: 0.875rem 1.25rem;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .search-button:hover {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        transform: translateX(-2px);
+    }
+
+    .search-button i {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+
+    /* =================================== */
+    /* ユーザーメニュー */
+    /* =================================== */
+    .user-menu {
+        min-width: 0;
+    }
+
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar {
+        width: 2.25rem;
+        height: 2.25rem;
+        background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .user-email {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-800);
+    }
+
+    .user-status {
+        font-size: 0.75rem;
+        color: var(--success);
+        font-weight: 500;
+    }
+
+    .user-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* =================================== */
+    /* 認証メニュー */
+    /* =================================== */
+    .auth-menu {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+
+    .welcome-text {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        margin: 0;
+    }
+
+    .auth-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    /* =================================== */
+    /* ボタンスタイル */
+    /* =================================== */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .btn i {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, var(--secondary), var(--secondary-dark));
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary:hover {
+        background: linear-gradient(135deg, var(--secondary-dark), var(--secondary));
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-danger:hover {
+        background: linear-gradient(135deg, var(--danger-dark), var(--danger));
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+        background: white;
+        color: var(--gray-700);
+        border-color: var(--gray-300);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-outline:hover {
+        background: var(--gray-50);
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* =================================== */
+    /* メインコンテンツ */
+    /* =================================== */
+    .main-content {
+        min-height: calc(100vh - 4rem - 12rem);
+        padding: 2rem 0;
+    }
+
+    /* =================================== */
+    /* フッター */
+    /* =================================== */
+    .footer {
+        background: var(--gray-900);
+        color: var(--gray-300);
+        margin-top: 4rem;
+    }
+
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem 2rem;
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+    }
+
+    .footer-brand {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: white;
+        font-weight: 600;
+    }
+
+    .footer-description {
+        color: var(--gray-400);
+        font-size: 0.875rem;
+    }
+
+    .footer-links {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+
+    .footer-section h4 {
+        color: white;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .footer-section ul {
+        list-style: none;
+    }
+
+    .footer-section ul li {
+        margin-bottom: 0.5rem;
+    }
+
+    .footer-section ul li a {
+        color: var(--gray-400);
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: var(--transition);
+    }
+
+    .footer-section ul li a:hover {
+        color: var(--primary-light);
+    }
+
+    .footer-bottom {
+        border-top: 1px solid var(--gray-800);
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .footer-bottom p {
+        color: var(--gray-500);
+        font-size: 0.875rem;
+    }
+
+    /* =================================== */
+    /* レスポンシブデザイン */
+    /* =================================== */
+    @media (max-width: 1024px) {
+        .nav-container {
+            padding: 0 1rem;
+        }
+        
+        .search-container {
+            margin: 0 1rem;
+            max-width: 20rem;
+        }
+        
+        .user-details {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .nav-container {
+            flex-direction: column;
+            height: auto;
+            padding: 1rem;
+            gap: 1rem;
+        }
+        
+        .search-container {
+            order: 3;
+            max-width: 100%;
+            margin: 0;
+        }
+        
+        .user-menu {
+            order: 2;
+            align-self: flex-end;
+        }
+        
+        .brand-text {
+            font-size: 1.125rem;
+        }
+        
+        .footer-content {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        .footer-links {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .brand-text {
+            display: none;
+        }
+        
+        .user-actions {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8rem;
+        }
+        
+        .search-input {
+            font-size: 0.8rem;
+        }
+    }
+
+    /* =================================== */
+    /* ダークモード対応（将来的な拡張） */
+    /* =================================== */
+    @media (prefers-color-scheme: dark) {
+        /* ダークモードの設定は将来追加可能 */
+    }
+
+    /* =================================== */
+    /* アニメーション */
+    /* =================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(1rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .main-content > * {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    </style>
+
     <script src="main.js"></script>
+    <script>
+        // Feather Iconsの初期化
+        feather.replace();
+    </script>
 </body>
 </html>

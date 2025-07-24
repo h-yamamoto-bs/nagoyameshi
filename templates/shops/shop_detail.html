@@ -1,53 +1,1074 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div>
-    <!-- パンクズリスト -->
-    <div>
-        <nav>
-            <span> &gt; </span>
-            <a href="{% url 'shops:shop_list' %}">ホーム</a>
-            <span> &gt; </span>
-            <span>{{ shop.name }}</span>
-        </nav>
-    </div>
+<div class="shop-detail-container">
+    <!-- =================================== -->
+    <!-- パンくずナビゲーション -->
+    <!-- =================================== -->
+    <nav class="breadcrumb">
+        <div class="breadcrumb-content">
+            <a href="{% url 'shops:shop_list' %}" class="breadcrumb-item">
+                <i data-feather="home"></i>
+                <span>ホーム</span>
+            </a>
+            <i data-feather="chevron-right" class="breadcrumb-separator"></i>
+            <a href="{% url 'shops:shop_list' %}" class="breadcrumb-item">
+                <span>店舗一覧</span>
+            </a>
+            <i data-feather="chevron-right" class="breadcrumb-separator"></i>
+            <span class="breadcrumb-current">{{ shop.name }}</span>
+        </div>
+    </nav>
 
-    <!-- 画像カルーセル部分 -->
-    {% if shop.images.exists %}
-        <div class="image-carousel" style="position: relative; margin: 20px 0; max-width: 600px; margin: 20px auto;">
-            <!-- 画像表示エリア -->
-            <div class="carousel-container" style="position: relative; width: 100%; height: 400px; overflow: hidden; border-radius: 10px; background: #f0f0f0;">
-                <div class="carousel-track" id="carouselTrack" style="display: flex; width: {{ shop.images.count }}00%; height: 100%; transition: transform 0.3s ease;">
-                    {% for image in shop.images.all %}
-                        <div class="carousel-slide" style="width: calc(100% / {{ shop.images.count }}); flex-shrink: 0;">
-                            <img src="{{ image.image.url }}"
-                                 alt="{{ shop.name }} - 画像{{ forloop.counter }}"
-                                 style="width: 100%; height: 100%; object-fit: cover;">
+    <!-- =================================== -->
+    <!-- メインコンテンツ -->
+    <!-- =================================== -->
+    <div class="shop-main">
+        <!-- =================================== -->
+        <!-- 画像ギャラリー -->
+        <!-- =================================== -->
+        <div class="gallery-section">
+            {% if shop.images.exists %}
+                <div class="image-gallery">
+                    <!-- メイン画像 -->
+                    <div class="main-image-container">
+                        <div class="main-image-wrapper">
+                            <img id="mainImage" 
+                                 src="{{ shop.images.first.image.url }}" 
+                                 alt="{{ shop.name }}"
+                                 class="main-image">
+                            <div class="image-overlay">
+                                <button class="zoom-btn" onclick="openLightbox(0)">
+                                    <i data-feather="zoom-in"></i>
+                                </button>
+                            </div>
                         </div>
-                    {% endfor %}
+                        
+                        <!-- 画像ナビゲーション -->
+                        {% if shop.images.count > 1 %}
+                            <div class="image-navigation">
+                                <button class="nav-btn prev-btn" onclick="changeMainImage(-1)">
+                                    <i data-feather="chevron-left"></i>
+                                </button>
+                                <span class="image-counter">
+                                    <span id="currentImageIndex">1</span> / {{ shop.images.count }}
+                                </span>
+                                <button class="nav-btn next-btn" onclick="changeMainImage(1)">
+                                    <i data-feather="chevron-right"></i>
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- サムネイル -->
+                    {% if shop.images.count > 1 %}
+                        <div class="thumbnail-container">
+                            <div class="thumbnail-grid" id="thumbnailGrid">
+                                {% for image in shop.images.all %}
+                                    <div class="thumbnail {% if forloop.first %}active{% endif %}" 
+                                         onclick="selectImage({{ forloop.counter0 }})"
+                                         data-index="{{ forloop.counter0 }}">
+                                        <img src="{{ image.image.url }}" alt="{{ shop.name }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="no-images">
+                    <div class="no-image-icon">
+                        <i data-feather="image"></i>
+                    </div>
+                    <p>画像準備中</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- =================================== -->
+        <!-- 店舗情報 -->
+        <!-- =================================== -->
+        <div class="shop-info-section">
+            <!-- ヘッダー -->
+            <div class="shop-header">
+                <div class="shop-title-area">
+                    <h1 class="shop-name">{{ shop.name }}</h1>
+                    <div class="shop-badges">
+                        <span class="badge-new">
+                            <i data-feather="star"></i>
+                            おすすめ
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- アクションボタン -->
+                <div class="action-buttons">
+                    <button class="btn-favorite" data-shop-id="{{ shop.pk }}">
+                        <i data-feather="heart"></i>
+                        <span>お気に入り</span>
+                    </button>
+                    <button class="btn-share" data-shop-id="{{ shop.pk }}">
+                        <i data-feather="share-2"></i>
+                        <span>共有</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 基本情報 -->
+            <div class="shop-details">
+                <div class="detail-card">
+                    <h3 class="card-title">
+                        <i data-feather="info"></i>
+                        基本情報
+                    </h3>
+                    <div class="detail-grid">
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i data-feather="map-pin"></i>
+                                <span>住所</span>
+                            </div>
+                            <div class="detail-value">{{ shop.address }}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i data-feather="phone"></i>
+                                <span>電話番号</span>
+                            </div>
+                            <div class="detail-value">
+                                {% if shop.phone_number %}
+                                    <a href="tel:{{ shop.phone_number }}" class="phone-link">
+                                        {{ shop.phone_number }}
+                                    </a>
+                                {% else %}
+                                    お問い合わせ時間をご確認ください
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i data-feather="users"></i>
+                                <span>座席数</span>
+                            </div>
+                            <div class="detail-value">{{ shop.seat_count }}席</div>
+                        </div>
+                        
+                        {% if shop.images.count > 0 %}
+                            <div class="detail-row">
+                                <div class="detail-label">
+                                    <i data-feather="camera"></i>
+                                    <span>写真</span>
+                                </div>
+                                <div class="detail-value">{{ shop.images.count }}枚</div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <!-- 左右の矢印ボタン -->
+                <!-- マップセクション（将来的な拡張） -->
+                <div class="detail-card">
+                    <h3 class="card-title">
+                        <i data-feather="map"></i>
+                        アクセス
+                    </h3>
+                    <div class="map-placeholder">
+                        <div class="map-icon">
+                            <i data-feather="map-pin"></i>
+                        </div>
+                        <p>地図を表示（準備中）</p>
+                        <button class="btn-map" disabled>
+                            <i data-feather="external-link"></i>
+                            Googleマップで開く
+                        </button>
+                    </div>
+                </div>
+
+                <!-- レビューセクション（将来的な拡張） -->
+                <div class="detail-card">
+                    <h3 class="card-title">
+                        <i data-feather="message-square"></i>
+                        レビュー
+                    </h3>
+                    <div class="review-placeholder">
+                        <div class="review-stats">
+                            <div class="star-rating">
+                                <div class="stars">
+                                    <i data-feather="star" class="star filled"></i>
+                                    <i data-feather="star" class="star filled"></i>
+                                    <i data-feather="star" class="star filled"></i>
+                                    <i data-feather="star" class="star filled"></i>
+                                    <i data-feather="star" class="star"></i>
+                                </div>
+                                <span class="rating-text">4.2 (レビュー機能準備中)</span>
+                            </div>
+                        </div>
+                        <button class="btn-review">
+                            <i data-feather="edit"></i>
+                            レビューを書く
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================== -->
+    <!-- ライトボックス（画像拡大表示） -->
+    <!-- =================================== -->
+    <div id="lightbox" class="lightbox">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">
+                <i data-feather="x"></i>
+            </button>
+            <div class="lightbox-image-container">
+                <img id="lightboxImage" src="" alt="">
                 {% if shop.images.count > 1 %}
-                    <button class="carousel-btn prev-btn" onclick="moveSlide(-1)"
-                            style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
-                                   background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%;
-                                   width: 50px; height: 50px; cursor: pointer; font-size: 20px; z-index: 10;">
-                        ‹
+                    <button class="lightbox-nav prev" onclick="lightboxNav(-1)">
+                        <i data-feather="chevron-left"></i>
                     </button>
-                    <button class="carousel-btn next-btn" onclick="moveSlide(1)"
-                            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-                                   background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%;
-                                   width: 50px; height: 50px; cursor: pointer; font-size: 20px; z-index: 10;">
-                        ›
+                    <button class="lightbox-nav next" onclick="lightboxNav(1)">
+                        <i data-feather="chevron-right"></i>
                     </button>
                 {% endif %}
+            </div>
+            <div class="lightbox-info">
+                <p id="lightboxImageInfo">{{ shop.name }}</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-                <!-- インジケーター（ドット） -->
-                {% if shop.images.count > 1 %}
-                    <div class="carousel-indicators" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10;">
-                        {% for image in shop.images.all %}
-                            <button class="indicator-dot" onclick="goToSlide({{ forloop.counter0 }})"
+<!-- =================================== -->
+<!-- ショップ詳細ページ専用CSS -->
+<!-- =================================== -->
+<style>
+/* =================================== */
+/* 基本レイアウト */
+/* =================================== */
+.shop-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* =================================== */
+/* パンくずナビゲーション */
+/* =================================== */
+.breadcrumb {
+    margin-bottom: 2rem;
+}
+
+.breadcrumb-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--gray-600);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-item:hover {
+    color: var(--primary);
+}
+
+.breadcrumb-item i {
+    width: 1rem;
+    height: 1rem;
+}
+
+.breadcrumb-separator {
+    width: 1rem;
+    height: 1rem;
+    color: var(--gray-400);
+}
+
+.breadcrumb-current {
+    color: var(--gray-800);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+/* =================================== */
+/* メインレイアウト */
+/* =================================== */
+.shop-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+/* =================================== */
+/* 画像ギャラリー */
+/* =================================== */
+.gallery-section {
+    position: sticky;
+    top: 2rem;
+}
+
+.image-gallery {
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.main-image-container {
+    position: relative;
+}
+
+.main-image-wrapper {
+    position: relative;
+    aspect-ratio: 16/10;
+    overflow: hidden;
+}
+
+.main-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.main-image-wrapper:hover .main-image {
+    transform: scale(1.05);
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.main-image-wrapper:hover .image-overlay {
+    opacity: 1;
+}
+
+.zoom-btn {
+    width: 4rem;
+    height: 4rem;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.zoom-btn:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+.zoom-btn i {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.image-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.nav-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    border-radius: 50%;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.nav-btn i {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.image-counter {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.thumbnail-container {
+    padding: 1rem;
+    background: var(--gray-50);
+}
+
+.thumbnail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.75rem;
+}
+
+.thumbnail {
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.thumbnail.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-images {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: var(--gray-50);
+    border-radius: 1.5rem;
+    border: 2px dashed var(--gray-300);
+}
+
+.no-image-icon {
+    width: 4rem;
+    height: 4rem;
+    background: var(--gray-200);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: var(--gray-500);
+}
+
+.no-image-icon i {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* =================================== */
+/* 店舗情報セクション */
+/* =================================== */
+.shop-info-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.shop-header {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.shop-title-area {
+    margin-bottom: 1.5rem;
+}
+
+.shop-name {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--gray-800);
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+}
+
+.shop-badges {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.badge-new {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.badge-new i {
+    width: 1rem;
+    height: 1rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-favorite,
+.btn-share {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 2px solid var(--gray-300);
+    border-radius: 1rem;
+    background: white;
+    color: var(--gray-700);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-favorite:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.btn-share:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #2563eb;
+}
+
+.btn-favorite i,
+.btn-share i {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.shop-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.detail-card {
+    background: white;
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 1.5rem 0;
+}
+
+.card-title i {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--primary);
+}
+
+.detail-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.detail-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+.detail-label i {
+    width: 1rem;
+    height: 1rem;
+    color: var(--primary);
+}
+
+.detail-value {
+    flex: 1;
+    color: var(--gray-600);
+    line-height: 1.5;
+}
+
+.phone-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.phone-link:hover {
+    text-decoration: underline;
+}
+
+/* =================================== */
+/* マップとレビューのプレースホルダー */
+/* =================================== */
+.map-placeholder,
+.review-placeholder {
+    text-align: center;
+    padding: 2rem;
+    background: var(--gray-50);
+    border-radius: 1rem;
+    border: 2px dashed var(--gray-300);
+}
+
+.map-icon {
+    width: 3rem;
+    height: 3rem;
+    background: var(--gray-200);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: var(--gray-500);
+}
+
+.map-icon i {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.btn-map,
+.btn-review {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--gray-300);
+    color: var(--gray-600);
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    margin-top: 1rem;
+    cursor: not-allowed;
+}
+
+.btn-review {
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+}
+
+.btn-review:hover {
+    background: var(--primary-dark);
+}
+
+.review-stats {
+    margin-bottom: 1rem;
+}
+
+.star-rating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.stars {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.star {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--gray-300);
+}
+
+.star.filled {
+    color: #fbbf24;
+}
+
+.rating-text {
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+/* =================================== */
+/* ライトボックス */
+/* =================================== */
+.lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox.active {
+    display: flex;
+}
+
+.lightbox-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    z-index: 1001;
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.lightbox-close i {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.lightbox-image-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#lightboxImage {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 0.5rem;
+}
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.lightbox-nav:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.lightbox-nav.prev {
+    left: -60px;
+}
+
+.lightbox-nav.next {
+    right: -60px;
+}
+
+.lightbox-nav i {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.lightbox-info {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.lightbox-info p {
+    color: white;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* =================================== */
+/* レスポンシブデザイン */
+/* =================================== */
+@media (max-width: 1024px) {
+    .shop-main {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .gallery-section {
+        position: relative;
+        top: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .shop-detail-container {
+        padding: 1rem;
+    }
+    
+    .shop-name {
+        font-size: 2rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .detail-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .detail-label {
+        min-width: auto;
+    }
+    
+    .thumbnail-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+    
+    .lightbox-nav.prev {
+        left: 10px;
+    }
+    
+    .lightbox-nav.next {
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .shop-header,
+    .detail-card {
+        padding: 1.5rem;
+    }
+    
+    .breadcrumb-content {
+        font-size: 0.75rem;
+    }
+    
+    .shop-name {
+        font-size: 1.75rem;
+    }
+}
+</style>
+
+<script>
+// 画像データを格納
+const shopImages = [
+    {% for image in shop.images.all %}
+        {
+            url: "{{ image.image.url }}",
+            alt: "{{ shop.name }} - 画像{{ forloop.counter }}"
+        }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+let currentImageIndex = 0;
+
+// Feather Icons初期化
+feather.replace();
+
+// 画像ギャラリー機能
+function changeMainImage(direction) {
+    if (shopImages.length === 0) return;
+    
+    currentImageIndex += direction;
+    
+    if (currentImageIndex >= shopImages.length) {
+        currentImageIndex = 0;
+    } else if (currentImageIndex < 0) {
+        currentImageIndex = shopImages.length - 1;
+    }
+    
+    updateMainImage();
+}
+
+function selectImage(index) {
+    if (index >= 0 && index < shopImages.length) {
+        currentImageIndex = index;
+        updateMainImage();
+    }
+}
+
+function updateMainImage() {
+    const mainImage = document.getElementById('mainImage');
+    const currentIndexEl = document.getElementById('currentImageIndex');
+    
+    if (mainImage && shopImages[currentImageIndex]) {
+        mainImage.src = shopImages[currentImageIndex].url;
+        mainImage.alt = shopImages[currentImageIndex].alt;
+    }
+    
+    if (currentIndexEl) {
+        currentIndexEl.textContent = currentImageIndex + 1;
+    }
+    
+    // サムネイルのアクティブ状態更新
+    document.querySelectorAll('.thumbnail').forEach((thumb, index) => {
+        thumb.classList.toggle('active', index === currentImageIndex);
+    });
+}
+
+// ライトボックス機能
+function openLightbox(index) {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    
+    if (shopImages[index]) {
+        currentImageIndex = index;
+        lightboxImage.src = shopImages[index].url;
+        lightboxImage.alt = shopImages[index].alt;
+        lightbox.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    lightbox.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function lightboxNav(direction) {
+    currentImageIndex += direction;
+    
+    if (currentImageIndex >= shopImages.length) {
+        currentImageIndex = 0;
+    } else if (currentImageIndex < 0) {
+        currentImageIndex = shopImages.length - 1;
+    }
+    
+    const lightboxImage = document.getElementById('lightboxImage');
+    lightboxImage.src = shopImages[currentImageIndex].url;
+    lightboxImage.alt = shopImages[currentImageIndex].alt;
+}
+
+// キーボードショートカット
+document.addEventListener('keydown', function(e) {
+    const lightbox = document.getElementById('lightbox');
+    
+    if (lightbox.classList.contains('active')) {
+        switch(e.key) {
+            case 'Escape':
+                closeLightbox();
+                break;
+            case 'ArrowLeft':
+                lightboxNav(-1);
+                break;
+            case 'ArrowRight':
+                lightboxNav(1);
+                break;
+        }
+    }
+});
+
+// ライトボックス外クリックで閉じる
+document.getElementById('lightbox').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeLightbox();
+    }
+});
+
+// お気に入り・共有ボタンの機能
+document.addEventListener('DOMContentLoaded', function() {
+    // お気に入りボタン
+    const favoriteBtn = document.querySelector('.btn-favorite');
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', function() {
+            const shopId = this.dataset.shopId;
+            // アニメーション効果
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+            
+            // TODO: お気に入り登録API
+            console.log('お気に入りに追加:', shopId);
+        });
+    }
+    
+    // 共有ボタン
+    const shareBtn = document.querySelector('.btn-share');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', function() {
+            if (navigator.share) {
+                navigator.share({
+                    title: '{{ shop.name }} - NAGOYAMESHI',
+                    text: '{{ shop.name }}をチェックしてみてください！',
+                    url: window.location.href
+                });
+            } else {
+                // フォールバック
+                navigator.clipboard.writeText(window.location.href);
+                alert('URLをコピーしました！');
+            }
+        });
+    }
+    
+    // レビューボタン
+    const reviewBtn = document.querySelector('.btn-review');
+    if (reviewBtn) {
+        reviewBtn.addEventListener('click', function() {
+            // TODO: レビュー投稿モーダルを開く
+            alert('レビュー機能は準備中です');
+        });
+    }
+});
+</script>
+{% endblock %}
                                     style="width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;
                                            background: {% if forloop.first %}white{% else %}transparent{% endif %};
                                            cursor: pointer; transition: background 0.3s ease;">

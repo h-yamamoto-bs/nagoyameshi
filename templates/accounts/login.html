@@ -1,31 +1,694 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAGOYAMESHI</title>
-</head>
-<body>
-    <div>
-        <div>
-            <a href="{% url 'accounts:register' %}">新規登録はこちらから ></a>
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-container">
+    <!-- =================================== -->
+    <!-- 背景デコレーション -->
+    <!-- =================================== -->
+    <div class="auth-background">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+
+    <!-- =================================== -->
+    <!-- メインコンテンツ -->
+    <!-- =================================== -->
+    <div class="auth-content">
+        <!-- =================================== -->
+        <!-- ログインカード -->
+        <!-- =================================== -->
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon">
+                    <i data-feather="log-in"></i>
+                </div>
+                <h1 class="auth-title">おかえりなさい</h1>
+                <p class="auth-subtitle">NAGOYAMESHIにログインして、美味しい発見を続けましょう</p>
+            </div>
+
+            <!-- =================================== -->
+            <!-- メッセージ表示 -->
+            <!-- =================================== -->
+            {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="message-item {% if message.tags == 'error' %}message-error{% elif message.tags == 'success' %}message-success{% endif %}">
+                            <i data-feather="{% if message.tags == 'error' %}alert-circle{% elif message.tags == 'success' %}check-circle{% else %}info{% endif %}"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- =================================== -->
+            <!-- ログインフォーム -->
+            <!-- =================================== -->
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i data-feather="mail"></i>
+                        メールアドレス
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            value="{{ email }}"
+                            class="form-input"
+                            placeholder="your@email.com"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="user"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i data-feather="lock"></i>
+                        パスワード
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-input"
+                            placeholder="••••••••"
+                            required>
+                        <div class="input-icon">
+                            <i data-feather="key"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember_me">
+                        <span class="checkmark"></span>
+                        ログイン状態を保持
+                    </label>
+                    <a href="#" class="forgot-password">パスワードを忘れた方</a>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <span>ログイン</span>
+                    <i data-feather="arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- =================================== -->
+            <!-- 関連リンク -->
+            <!-- =================================== -->
+            <div class="auth-footer">
+                <p>NAGOYAMESHIが初めての方</p>
+                <a href="{% url 'accounts:register' %}" class="btn-register">
+                    <i data-feather="user-plus"></i>
+                    新規登録
+                </a>
+            </div>
         </div>
-        <div>
-            <!-- メールアドレス -->
-            <label for="email">メールアドレス:</label>
-            <input type="email" id="email" name="email" required>
-        </div>
-        <div>
-            <!-- パスワード -->
-            <label for="password">パスワード:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div>
-            <button type="submit">ログイン</button>
+
+        <!-- =================================== -->
+        <!-- サイドイメージ（デスクトップ用） -->
+        <!-- =================================== -->
+        <div class="auth-side">
+            <div class="side-content">
+                <div class="side-icon">
+                    <i data-feather="compass"></i>
+                </div>
+                <h2>名古屋の美食を発見</h2>
+                <p>地元の隠れた名店から人気のレストランまで、NAGOYAMESHIで素晴らしい食体験を見つけましょう。</p>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <i data-feather="search"></i>
+                        <span>詳細検索</span>
+                    </div>
+                    <div class="feature-item">
+                        <i data-feather="star"></i>
+                        <span>レビュー機能</span>
+                    </div>
+                    <div class="feature-item">
+                        <i data-feather="heart"></i>
+                        <span>お気に入り保存</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div>
-        <a href="">パスワードを忘れた方はこちら ></a>
-    </div>
-</body>
-</html>
+</div>
+
+<!-- =================================== -->
+<!-- 超オシャレな認証ページ専用CSS -->
+<!-- =================================== -->
+<style>
+/* =================================== */
+/* 基本レイアウト */
+/* =================================== */
+.auth-container {
+    min-height: calc(100vh - 4rem);
+    position: relative;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    overflow: hidden;
+}
+
+.auth-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.floating-shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    animation: float 8s ease-in-out infinite;
+}
+
+.shape-1 {
+    width: 200px;
+    height: 200px;
+    top: -100px;
+    right: -100px;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 150px;
+    height: 150px;
+    bottom: -75px;
+    left: -75px;
+    animation-delay: 2s;
+}
+
+.shape-3 {
+    width: 100px;
+    height: 100px;
+    top: 20%;
+    left: 10%;
+    animation-delay: 4s;
+}
+
+.shape-4 {
+    width: 80px;
+    height: 80px;
+    bottom: 20%;
+    right: 10%;
+    animation-delay: 6s;
+}
+
+@keyframes float {
+    0%, 100% { 
+        transform: translateY(0px) rotate(0deg); 
+        opacity: 0.1;
+    }
+    50% { 
+        transform: translateY(-20px) rotate(180deg); 
+        opacity: 0.2;
+    }
+}
+
+.auth-content {
+    position: relative;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: calc(100vh - 4rem);
+    align-items: center;
+    gap: 4rem;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* =================================== */
+/* 認証カード */
+/* =================================== */
+.auth-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 2rem;
+    padding: 3rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 500px;
+    width: 100%;
+    justify-self: end;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-icon {
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+.auth-icon i {
+    width: 2rem;
+    height: 2rem;
+}
+
+.auth-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 0.75rem 0;
+    background: linear-gradient(135deg, var(--gray-800), var(--gray-600));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-subtitle {
+    color: var(--gray-600);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* =================================== */
+/* メッセージ表示 */
+/* =================================== */
+.messages-container {
+    margin-bottom: 1.5rem;
+}
+
+.message-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.75rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+.message-error {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.message-success {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =================================== */
+/* フォームスタイル */
+/* =================================== */
+.auth-form {
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 1rem;
+    font-size: 1rem;
+    background: white;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.form-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+}
+
+.input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    transition: color 0.3s ease;
+}
+
+.form-input:focus + .input-icon {
+    color: var(--primary);
+}
+
+/* =================================== */
+/* フォームオプション */
+/* =================================== */
+.form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    cursor: pointer;
+}
+
+.remember-me input {
+    display: none;
+}
+
+.checkmark {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--gray-300);
+    border-radius: 0.375rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.remember-me input:checked + .checkmark {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.remember-me input:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.forgot-password {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+    color: var(--primary-dark);
+}
+
+/* =================================== */
+/* ボタンスタイル */
+/* =================================== */
+.btn-login {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+/* =================================== */
+/* フッター */
+/* =================================== */
+.auth-footer {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.auth-footer p {
+    margin: 0 0 1rem 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.btn-register {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--gray-50), white);
+    color: var(--gray-700);
+    text-decoration: none;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+}
+
+.btn-register:hover {
+    background: linear-gradient(135deg, var(--gray-100), var(--gray-50));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* =================================== */
+/* サイドコンテンツ */
+/* =================================== */
+.auth-side {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.side-content {
+    max-width: 400px;
+}
+
+.side-icon {
+    width: 5rem;
+    height: 5rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.side-icon i {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.side-content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    line-height: 1.2;
+}
+
+.side-content p {
+    font-size: 1.125rem;
+    opacity: 0.9;
+    line-height: 1.6;
+    margin: 0 0 2rem 0;
+}
+
+.feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.feature-item i {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* =================================== */
+/* レスポンシブデザイン */
+/* =================================== */
+@media (max-width: 1024px) {
+    .auth-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1rem;
+    }
+    
+    .auth-card {
+        justify-self: center;
+        max-width: 500px;
+    }
+    
+    .auth-side {
+        order: -1;
+    }
+    
+    .side-content h2 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-card {
+        padding: 2rem;
+        border-radius: 1.5rem;
+    }
+    
+    .auth-title {
+        font-size: 1.75rem;
+    }
+    
+    .form-options {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .side-content {
+        max-width: 100%;
+    }
+    
+    .side-content h2 {
+        font-size: 1.75rem;
+    }
+    
+    .side-content p {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-container {
+        padding: 0.5rem;
+    }
+    
+    .auth-card {
+        padding: 1.5rem;
+    }
+    
+    .auth-title {
+        font-size: 1.5rem;
+    }
+    
+    .auth-subtitle {
+        font-size: 0.875rem;
+    }
+    
+    .side-content h2 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<script>
+// Feather Iconsの初期化
+feather.replace();
+
+// フォームアニメーション
+document.addEventListener('DOMContentLoaded', function() {
+    const authCard = document.querySelector('.auth-card');
+    const formInputs = document.querySelectorAll('.form-input');
+    
+    // カードのフェードインアニメーション
+    authCard.style.opacity = '0';
+    authCard.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        authCard.style.transition = 'all 0.6s ease-out';
+        authCard.style.opacity = '1';
+        authCard.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // インプットフィールドのアニメーション
+    formInputs.forEach((input, index) => {
+        input.addEventListener('focus', function() {
+            this.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.style.transform = 'scale(1)';
+        });
+    });
+    
+    // パスワード表示/非表示機能（将来的な拡張）
+    const passwordInput = document.getElementById('password');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            const inputIcon = this.nextElementSibling;
+            if (this.value.length > 0) {
+                inputIcon.style.color = 'var(--primary)';
+            } else {
+                inputIcon.style.color = 'var(--gray-400)';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
