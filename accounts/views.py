@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # ユーザー一覧
 class AccountListView(ListView):
@@ -101,6 +102,14 @@ class RegisterView(TemplateView):
         except Exception as e:
             messages.error(request, f'アカウントの作成に失敗しました: {str(e)}')
             return render(request, self.template_name, {'email': email})
+
+class MyPageView(LoginRequiredMixin, TemplateView):
+    template_name = 'accounts/mypage.html'
+    login_url = reverse_lazy('accounts:login')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
 
 # ログアウト
 def logout_view(request):

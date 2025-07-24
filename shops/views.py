@@ -43,6 +43,7 @@ class ShopSearchView(ListView):
 
         # 親クラスのコンテキストを取得
         context = super().get_context_data(**kwargs)
+        # print(**kwargs.get('shop_pk'))
 
         # 検索キーワードをコンテキストに追加
         # テンプレートで検索ボックスに前回の検索語を

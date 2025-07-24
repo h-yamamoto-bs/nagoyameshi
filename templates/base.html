@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NAGOYAMESHI</title>
-    <link rel="stylesheet" href="styles.css">
     <!-- Google Fonts for beautiful typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Feather Icons for clean icons -->
@@ -74,7 +73,7 @@
                         
                         <div class="user-actions">
                             <!-- マイページボタン -->
-                            <a href="#" class="btn btn-secondary">
+                            <a href="{% url 'accounts:mypage' %}" class="btn btn-secondary">
                                 <i data-feather="user"></i>
                                 <span>マイページ</span>
                             </a>

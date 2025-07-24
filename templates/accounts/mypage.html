@@ -50,27 +50,27 @@
                 <div class="stat-icon visits">
                     <i data-feather="eye"></i>
                 </div>
-                <div class="stat-info">
-                    <h3>127</h3>
-                    <p>店舗訪問数</p>
-                </div>
-                <div class="stat-trend up">
-                    <i data-feather="trending-up"></i>
-                    <span>+12%</span>
+                <div class="stat-content">
+                    <div class="stat-number" data-count="127">0</div>
+                    <div class="stat-label">店舗訪問数</div>
+                    <div class="stat-trend positive">
+                        <i data-feather="trending-up"></i>
+                        <span>+12%</span>
+                    </div>
                 </div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-icon reviews">
-                    <i data-feather="message-square"></i>
+                    <i data-feather="message-circle"></i>
                 </div>
-                <div class="stat-info">
-                    <h3>45</h3>
-                    <p>レビュー投稿</p>
-                </div>
-                <div class="stat-trend up">
-                    <i data-feather="trending-up"></i>
-                    <span>+8%</span>
+                <div class="stat-content">
+                    <div class="stat-number" data-count="43">0</div>
+                    <div class="stat-label">レビュー投稿</div>
+                    <div class="stat-trend positive">
+                        <i data-feather="trending-up"></i>
+                        <span>+5%</span>
+                    </div>
                 </div>
             </div>
 
@@ -78,222 +78,72 @@
                 <div class="stat-icon favorites">
                     <i data-feather="heart"></i>
                 </div>
-                <div class="stat-info">
-                    <h3>23</h3>
-                    <p>お気に入り</p>
-                </div>
-                <div class="stat-trend up">
-                    <i data-feather="trending-up"></i>
-                    <span>+5%</span>
+                <div class="stat-content">
+                    <div class="stat-number" data-count="89">0</div>
+                    <div class="stat-label">お気に入り</div>
+                    <div class="stat-trend positive">
+                        <i data-feather="trending-up"></i>
+                        <span>+18%</span>
+                    </div>
                 </div>
             </div>
 
             <div class="stat-card">
                 <div class="stat-icon points">
-                    <i data-feather="zap"></i>
+                    <i data-feather="award"></i>
                 </div>
-                <div class="stat-info">
-                    <h3>2,540</h3>
-                    <p>ポイント</p>
-                </div>
-                <div class="stat-trend up">
-                    <i data-feather="trending-up"></i>
-                    <span>+15%</span>
+                <div class="stat-content">
+                    <div class="stat-number" data-count="2450">0</div>
+                    <div class="stat-label">ポイント</div>
+                    <div class="stat-trend positive">
+                        <i data-feather="trending-up"></i>
+                        <span>+25%</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- =================================== -->
-    <!-- メインコンテンツエリア -->
+    <!-- アカウント設定 -->
     <!-- =================================== -->
-    <section class="main-content-section">
-        <div class="content-grid">
-            <!-- 左カラム -->
-            <div class="left-column">
-                <!-- アカウント設定カード -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i data-feather="settings"></i>
-                        </div>
-                        <h2>アカウント設定</h2>
-                    </div>
-                    <div class="card-content">
-                        <div class="setting-item">
-                            <div class="setting-info">
-                                <h4>プロフィール情報</h4>
-                                <p>基本情報を編集できます</p>
-                            </div>
-                            <button class="btn btn-outline-sm">
-                                <i data-feather="edit-3"></i>
-                                編集
-                            </button>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-info">
-                                <h4>パスワード変更</h4>
-                                <p>セキュリティを強化しましょう</p>
-                            </div>
-                            <button class="btn btn-outline-sm">
-                                <i data-feather="lock"></i>
-                                変更
-                            </button>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-info">
-                                <h4>通知設定</h4>
-                                <p>お知らせの受信方法を設定</p>
-                            </div>
-                            <button class="btn btn-outline-sm">
-                                <i data-feather="bell"></i>
-                                設定
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    <section class="settings-section">
+        <div class="section-header">
+            <h2 class="section-title">アカウント設定</h2>
+            <p class="section-subtitle">プロフィール情報とセキュリティ設定を管理</p>
+        </div>
 
-                <!-- 最近のアクティビティ -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <div class="card-icon activity">
-                            <i data-feather="activity"></i>
-                        </div>
-                        <h2>最近のアクティビティ</h2>
-                    </div>
-                    <div class="card-content">
-                        <div class="activity-list">
-                            <div class="activity-item">
-                                <div class="activity-icon review">
-                                    <i data-feather="star"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p><strong>矢場とん</strong> にレビューを投稿しました</p>
-                                    <span class="activity-time">2時間前</span>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-icon favorite">
-                                    <i data-feather="heart"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p><strong>ひつまぶし名古屋備長</strong> をお気に入りに追加</p>
-                                    <span class="activity-time">5時間前</span>
-                                </div>
-                            </div>
-                            
-                            <div class="activity-item">
-                                <div class="activity-icon visit">
-                                    <i data-feather="map-pin"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <p><strong>コメダ珈琲店</strong> を訪問しました</p>
-                                    <span class="activity-time">1日前</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="settings-grid">
+            <div class="setting-card">
+                <div class="setting-icon profile">
+                    <i data-feather="user"></i>
+                </div>
+                <div class="setting-content">
+                    <h3 class="setting-title">プロフィール編集</h3>
+                    <p class="setting-description">基本情報、写真、自己紹介を編集</p>
+                    <a href="#" class="btn btn-outline">編集する</a>
                 </div>
             </div>
 
-            <!-- 右カラム -->
-            <div class="right-column">
-                <!-- お気に入り店舗 -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <div class="card-icon favorites">
-                            <i data-feather="bookmark"></i>
-                        </div>
-                        <h2>お気に入り店舗</h2>
-                        <a href="#" class="view-all">すべて見る</a>
-                    </div>
-                    <div class="card-content">
-                        <div class="favorite-shops">
-                            <div class="shop-mini-card">
-                                <div class="shop-image">
-                                    <img src="https://via.placeholder.com/60x60?text=店" alt="店舗画像">
-                                </div>
-                                <div class="shop-info">
-                                    <h4>矢場とん 本店</h4>
-                                    <p>味噌カツ・名古屋料理</p>
-                                    <div class="shop-rating">
-                                        <span class="stars">★★★★☆</span>
-                                        <span>4.2</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="shop-mini-card">
-                                <div class="shop-image">
-                                    <img src="https://via.placeholder.com/60x60?text=店" alt="店舗画像">
-                                </div>
-                                <div class="shop-info">
-                                    <h4>ひつまぶし名古屋備長</h4>
-                                    <p>うなぎ・ひつまぶし</p>
-                                    <div class="shop-rating">
-                                        <span class="stars">★★★★★</span>
-                                        <span>4.8</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="shop-mini-card">
-                                <div class="shop-image">
-                                    <img src="https://via.placeholder.com/60x60?text=店" alt="店舗画像">
-                                </div>
-                                <div class="shop-info">
-                                    <h4>コメダ珈琲店</h4>
-                                    <p>喫茶店・コーヒー</p>
-                                    <div class="shop-rating">
-                                        <span class="stars">★★★★☆</span>
-                                        <span>4.0</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="setting-card">
+                <div class="setting-icon security">
+                    <i data-feather="shield"></i>
                 </div>
+                <div class="setting-content">
+                    <h3 class="setting-title">セキュリティ</h3>
+                    <p class="setting-description">パスワード変更、2要素認証の設定</p>
+                    <a href="#" class="btn btn-outline">設定</a>
+                </div>
+            </div>
 
-                <!-- おすすめ機能 -->
-                <div class="content-card">
-                    <div class="card-header">
-                        <div class="card-icon recommendations">
-                            <i data-feather="compass"></i>
-                        </div>
-                        <h2>おすすめ</h2>
-                    </div>
-                    <div class="card-content">
-                        <div class="recommendation-item">
-                            <div class="recommendation-icon">
-                                <i data-feather="award"></i>
-                            </div>
-                            <div class="recommendation-content">
-                                <h4>プレミアム会員になりませんか？</h4>
-                                <p>特別な特典とサービスをお楽しみいただけます</p>
-                                <button class="btn btn-gradient">
-                                    <i data-feather="crown"></i>
-                                    詳細を見る
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="recommendation-item">
-                            <div class="recommendation-icon">
-                                <i data-feather="gift"></i>
-                            </div>
-                            <div class="recommendation-content">
-                                <h4>友達を招待してポイントゲット！</h4>
-                                <p>友達が登録すると両方にポイントプレゼント</p>
-                                <button class="btn btn-outline-sm">
-                                    <i data-feather="users"></i>
-                                    招待する
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <div class="setting-card">
+                <div class="setting-icon notifications">
+                    <i data-feather="bell"></i>
+                </div>
+                <div class="setting-content">
+                    <h3 class="setting-title">通知設定</h3>
+                    <p class="setting-description">メール通知、プッシュ通知のカスタマイズ</p>
+                    <a href="#" class="btn btn-outline">設定</a>
                 </div>
             </div>
         </div>
@@ -301,29 +151,23 @@
 </div>
 
 <!-- =================================== -->
-<!-- 超オシャレなマイページ専用CSS -->
+<!-- マイページ専用CSS -->
 <!-- =================================== -->
 <style>
-/* =================================== */
-/* マイページコンテナ */
-/* =================================== */
 .mypage-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
 }
 
-/* =================================== */
 /* ヒーローセクション */
-/* =================================== */
 .hero-section {
     position: relative;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 2rem;
-    padding: 3rem 2rem;
-    margin-bottom: 3rem;
+    padding: 4rem 0;
     overflow: hidden;
-    color: white;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: 1.5rem;
+    margin-bottom: 3rem;
 }
 
 .hero-background {
@@ -338,35 +182,31 @@
 .hero-blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(40px);
-    opacity: 0.3;
+    background: rgba(255, 255, 255, 0.1);
     animation: float 6s ease-in-out infinite;
 }
 
 .blob-1 {
-    width: 200px;
-    height: 200px;
-    background: rgba(255, 255, 255, 0.2);
-    top: -100px;
-    right: -100px;
+    width: 300px;
+    height: 300px;
+    top: -150px;
+    right: -150px;
     animation-delay: 0s;
 }
 
 .blob-2 {
-    width: 150px;
-    height: 150px;
-    background: rgba(255, 255, 255, 0.15);
-    bottom: -75px;
-    left: -75px;
+    width: 200px;
+    height: 200px;
+    bottom: -100px;
+    left: -100px;
     animation-delay: 2s;
 }
 
 .blob-3 {
-    width: 100px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.1);
+    width: 150px;
+    height: 150px;
     top: 50%;
-    left: 50%;
+    left: 10%;
     animation-delay: 4s;
 }
 
@@ -377,49 +217,47 @@
 
 .hero-content {
     position: relative;
-    z-index: 10;
+    z-index: 2;
+    text-align: center;
+    color: white;
 }
 
 .user-profile-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: 1.5rem;
+    gap: 2rem;
 }
 
 .user-avatar-large {
     position: relative;
-    width: 5rem;
-    height: 5rem;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
-    font-weight: 700;
-    color: white;
-    backdrop-filter: blur(10px);
+    font-size: 3rem;
+    font-weight: bold;
+    border: 4px solid rgba(255, 255, 255, 0.3);
 }
 
 .status-indicator {
     position: absolute;
-    bottom: 0.25rem;
-    right: 0.25rem;
-    width: 1rem;
-    height: 1rem;
-    background: #10b981;
-    border: 2px solid white;
+    bottom: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    background: var(--success);
     border-radius: 50%;
+    border: 3px solid white;
     animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
 .welcome-title {
@@ -430,17 +268,16 @@
 }
 
 .gradient-text {
-    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    background: linear-gradient(45deg, #fbbf24, #f59e0b);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .welcome-subtitle {
-    font-size: 1.125rem;
+    font-size: 1.2rem;
     opacity: 0.9;
-    margin: 0;
-    font-weight: 300;
+    margin: 0.5rem 0 0 0;
 }
 
 .user-badges {
@@ -453,27 +290,13 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 2rem;
     font-size: 0.875rem;
     font-weight: 500;
-    backdrop-filter: blur(10px);
 }
 
-.badge.verified {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: rgba(16, 185, 129, 0.3);
-}
-
-.badge.premium {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.3);
-}
-
-/* =================================== */
 /* 統計セクション */
-/* =================================== */
 .stats-section {
     margin-bottom: 3rem;
 }
@@ -486,24 +309,27 @@
 
 .stat-card {
     background: white;
-    border-radius: 1.5rem;
     padding: 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition);
+    border: 1px solid var(--gray-200);
 }
 
 .stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .stat-icon {
-    width: 3rem;
-    height: 3rem;
+    width: 60px;
+    height: 60px;
     border-radius: 1rem;
     display: flex;
     align-items: center;
@@ -511,467 +337,184 @@
     color: white;
 }
 
-.stat-icon.visits { background: linear-gradient(135deg, #6366f1, #4f46e5); }
-.stat-icon.reviews { background: linear-gradient(135deg, #06b6d4, #0891b2); }
-.stat-icon.favorites { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.stat-icon.points { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.stat-icon.visits { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+.stat-icon.reviews { background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); }
+.stat-icon.favorites { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); }
+.stat-icon.points { background: linear-gradient(135deg, var(--warning), #d97706); }
 
-.stat-info {
+.stat-content {
     flex: 1;
 }
 
-.stat-info h3 {
-    font-size: 2rem;
+.stat-number {
+    font-size: 2.5rem;
     font-weight: 700;
-    margin: 0 0 0.25rem 0;
     color: var(--gray-800);
+    line-height: 1;
 }
 
-.stat-info p {
-    margin: 0;
-    color: var(--gray-600);
+.stat-label {
     font-size: 0.875rem;
+    color: var(--gray-600);
+    margin: 0.25rem 0;
 }
 
 .stat-trend {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
-.stat-trend.up {
-    color: #10b981;
+.stat-trend.positive {
+    color: var(--success);
 }
 
-/* =================================== */
-/* メインコンテンツ */
-/* =================================== */
-.main-content-section {
+/* 設定セクション */
+.settings-section {
     margin-bottom: 3rem;
 }
 
-.content-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+.section-header {
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
-.left-column, .right-column {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.content-card {
-    background: white;
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.content-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.5rem 2rem 1rem;
-    position: relative;
-}
-
-.card-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-}
-
-.card-icon.activity { background: linear-gradient(135deg, #06b6d4, #0891b2); }
-.card-icon.favorites { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.card-icon.recommendations { background: linear-gradient(135deg, #f59e0b, #d97706); }
-
-.card-header h2 {
-    flex: 1;
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin: 0;
+.section-title {
+    font-size: 2rem;
+    font-weight: 700;
     color: var(--gray-800);
+    margin: 0 0 0.5rem 0;
 }
 
-.view-all {
-    color: var(--primary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-.card-content {
-    padding: 0 2rem 2rem;
-}
-
-/* =================================== */
-/* 設定アイテム */
-/* =================================== */
-.setting-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.5rem 0;
-    border-bottom: 1px solid var(--gray-200);
-}
-
-.setting-item:last-child {
-    border-bottom: none;
-}
-
-.setting-info h4 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem 0;
-    color: var(--gray-800);
-}
-
-.setting-info p {
-    font-size: 0.875rem;
+.section-subtitle {
     color: var(--gray-600);
     margin: 0;
 }
 
-/* =================================== */
-/* アクティビティリスト */
-/* =================================== */
-.activity-list {
-    display: flex;
-    flex-direction: column;
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
 }
 
-.activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
+.setting-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    border: 1px solid var(--gray-200);
 }
 
-.activity-icon {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.75rem;
-    flex-shrink: 0;
+.setting-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-.activity-icon.review { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.activity-icon.favorite { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.activity-icon.visit { background: linear-gradient(135deg, #06b6d4, #0891b2); }
-
-.activity-content p {
-    margin: 0 0 0.25rem 0;
-    font-size: 0.875rem;
-    color: var(--gray-700);
-}
-
-.activity-time {
-    font-size: 0.75rem;
-    color: var(--gray-500);
-}
-
-/* =================================== */
-/* お気に入り店舗 */
-/* =================================== */
-.favorite-shops {
+.setting-card {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.shop-mini-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--gray-50);
-    border-radius: 1rem;
-    transition: all 0.3s ease;
-}
-
-.shop-mini-card:hover {
-    background: var(--gray-100);
-    transform: translateX(4px);
-}
-
-.shop-image {
-    width: 3.75rem;
-    height: 3.75rem;
+.setting-icon {
+    width: 50px;
+    height: 50px;
     border-radius: 0.75rem;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.shop-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.shop-info h4 {
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin: 0 0 0.25rem 0;
-    color: var(--gray-800);
-}
-
-.shop-info p {
-    font-size: 0.75rem;
-    color: var(--gray-600);
-    margin: 0 0 0.5rem 0;
-}
-
-.shop-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-}
-
-.stars {
-    color: #f59e0b;
-}
-
-/* =================================== */
-/* おすすめアイテム */
-/* =================================== */
-.recommendation-item {
-    display: flex;
-    gap: 1rem;
-    padding: 1.5rem;
-    background: linear-gradient(135deg, var(--gray-50), #ffffff);
-    border-radius: 1rem;
-    border: 1px solid var(--gray-200);
-    margin-bottom: 1rem;
-}
-
-.recommendation-item:last-child {
-    margin-bottom: 0;
-}
-
-.recommendation-icon {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 0.75rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    flex-shrink: 0;
 }
 
-.recommendation-content h4 {
-    font-size: 1rem;
+.setting-icon.profile { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+.setting-icon.security { background: linear-gradient(135deg, var(--success), #059669); }
+.setting-icon.notifications { background: linear-gradient(135deg, var(--warning), #d97706); }
+
+.setting-title {
+    font-size: 1.25rem;
     font-weight: 600;
-    margin: 0 0 0.5rem 0;
     color: var(--gray-800);
+    margin: 0;
 }
 
-.recommendation-content p {
-    font-size: 0.875rem;
+.setting-description {
     color: var(--gray-600);
-    margin: 0 0 1rem 0;
-    line-height: 1.5;
+    margin: 0;
+    font-size: 0.875rem;
 }
 
-/* =================================== */
-/* ボタンスタイル拡張 */
-/* =================================== */
-.btn-outline-sm {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    border: 1px solid var(--gray-300);
-    border-radius: 0.5rem;
-    background: white;
-    color: var(--gray-700);
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-sm:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: var(--gray-50);
-    transform: translateY(-1px);
-}
-
-.btn-gradient {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-gradient:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-}
-
-/* =================================== */
-/* レスポンシブデザイン */
-/* =================================== */
-@media (max-width: 1024px) {
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
+/* レスポンシブ */
 @media (max-width: 768px) {
-    .mypage-container {
-        padding: 0 0.5rem;
-    }
-    
     .hero-section {
-        padding: 2rem 1rem;
+        padding: 2rem 0;
         margin-bottom: 2rem;
     }
     
     .welcome-title {
-        font-size: 1.875rem;
+        font-size: 1.75rem;
     }
     
     .user-badges {
         flex-direction: column;
-        align-items: center;
+        width: 100%;
     }
     
-    .stats-grid {
+    .stats-grid,
+    .settings-grid {
         grid-template-columns: 1fr;
     }
     
     .stat-card {
-        padding: 1.5rem;
-    }
-    
-    .card-header {
-        padding: 1rem 1.5rem 0.5rem;
-    }
-    
-    .card-content {
-        padding: 0 1.5rem 1.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .hero-section {
-        padding: 1.5rem 1rem;
-    }
-    
-    .welcome-title {
-        font-size: 1.5rem;
-    }
-    
-    .welcome-subtitle {
-        font-size: 1rem;
-    }
-    
-    .user-avatar-large {
-        width: 4rem;
-        height: 4rem;
-        font-size: 1.5rem;
+        flex-direction: column;
+        text-align: center;
     }
 }
 </style>
 
 <script>
-// Feather Iconsの初期化
-feather.replace();
-
-// アニメーション用のIntersection Observer
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.animation = 'fadeInUp 0.6s ease-out forwards';
-        }
-    });
-}, observerOptions);
-
-// 全てのカードにアニメーションを適用
-document.querySelectorAll('.stat-card, .content-card').forEach(card => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(20px)';
-    observer.observe(card);
-});
-
 // カウントアップアニメーション
-function animateCountUp(element, start, end, duration) {
-    const range = end - start;
-    const increment = range / (duration / 16);
-    let current = start;
+document.addEventListener('DOMContentLoaded', function() {
+    const numbers = document.querySelectorAll('.stat-number[data-count]');
     
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= end) {
-            current = end;
-            clearInterval(timer);
-        }
-        element.textContent = Math.floor(current).toLocaleString();
-    }, 16);
-}
-
-// 統計数値のアニメーション
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        const statNumbers = document.querySelectorAll('.stat-info h3');
-        const numbers = [127, 45, 23, 2540];
+    const animateNumber = (element) => {
+        const target = parseInt(element.getAttribute('data-count'));
+        const duration = 2000;
+        const start = performance.now();
         
-        statNumbers.forEach((element, index) => {
-            animateCountUp(element, 0, numbers[index], 2000);
+        const update = (currentTime) => {
+            const elapsed = currentTime - start;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const current = Math.floor(progress * target);
+            element.textContent = current.toLocaleString();
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        };
+        
+        requestAnimationFrame(update);
+    };
+    
+    // Intersection Observer for triggering animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateNumber(entry.target);
+                observer.unobserve(entry.target);
+            }
         });
-    }, 500);
+    });
+    
+    numbers.forEach(number => {
+        observer.observe(number);
+    });
+    
+    // Feather Iconsの初期化
+    feather.replace();
 });
 </script>
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 {% endblock %}
