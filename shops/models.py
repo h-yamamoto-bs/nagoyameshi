@@ -49,3 +49,17 @@ class Favorite(models.Model):
     class Meta:
         db_table = 'favorites'
         unique_together = ('shop', 'user')
+
+class category(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'categories'
+
+class ShopCategory(models.Model):
+    shop = models.ForeignKey(Shop, related_name='categories', on_delete=models.CASCADE)
+    category = models.ForeignKey(category, related_name='shop_categories', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'shop_categories'
+        unique_together = ('shop', 'category')
