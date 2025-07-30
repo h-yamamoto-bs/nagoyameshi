@@ -24,3 +24,28 @@ class Image(models.Model):
 
     def __str__(self):
         return f"Image for {self.shop.name}"
+    
+class Review(models.Model):
+    shop = models.ForeignKey(Shop, related_name='reviews', on_delete=models.CASCADE)
+    rating = models.PositiveIntegerField(null=False, blank=False)
+    comment = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'reviews'
+
+class History(models.Model):
+    shop = models.ForeignKey(Shop, related_name='histories', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='histories', on_delete=models.CASCADE)
+    date = models.DateField(null=False, blank=False)
+    number_of_people = models.PositiveIntegerField(null=False, blank=False)
+
+    class Meta:
+        db_table = 'histories'
+
+class Favorite(models.Model):
+    shop = models.ForeignKey(Shop, related_name='favorites', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='favorites', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'favorites'
+        unique_together = ('shop', 'user')
