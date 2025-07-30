@@ -43,3 +43,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = 'auth_user'
+
+# サブスク会員
+class Subscription(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
+    start_date = models.DateField(auto_now_add=True)
+    end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    job = models.CharField(max_length=100, null=True, blank=True)
+    birth_year = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'subscriptions'

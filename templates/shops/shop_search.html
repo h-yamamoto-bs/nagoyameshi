@@ -1,4 +1,44 @@
+{% extends 'base.html' %}
+
 {% block content %}
+<!-- =================================== -->
+<!-- パンくずリスト -->
+<!-- =================================== -->
+<div class="breadcrumb-container">
+    <div class="breadcrumb-wrapper">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <ol class="breadcrumb-list">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'shops:shop_list' %}" class="breadcrumb-link">
+                        <i data-feather="home"></i>
+                        <span>ホーム</span>
+                    </a>
+                </li>
+                <li class="breadcrumb-divider">
+                    <i data-feather="chevron-right"></i>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'shops:search' %}" class="breadcrumb-link">
+                        <i data-feather="search"></i>
+                        <span>検索</span>
+                    </a>
+                </li>
+                {% if query %}
+                <li class="breadcrumb-divider">
+                    <i data-feather="chevron-right"></i>
+                </li>
+                <li class="breadcrumb-item breadcrumb-current" aria-current="page">
+                    <span class="breadcrumb-text">
+                        <i data-feather="filter"></i>
+                        <span>「{{ query }}」の検索結果</span>
+                    </span>
+                </li>
+                {% endif %}
+            </ol>
+        </nav>
+    </div>
+</div>
+
 <div class="search-container">
     <!-- =================================== -->
     <!-- 検索ヘロセクション -->
@@ -21,74 +61,7 @@
             {% else %}
                 <h1 class="search-title">お店を検索</h1>
                 <p class="search-subtitle">名古屋の美味しいお店を見つけよう</p>
-            {% endif %}
-            
-            <!-- 検索フォーム -->
-            <div class="search-form-container">
-                <form method="GET" class="advanced-search-form" id="searchForm">
-                    <div class="search-input-group">
-                        <div class="search-input-wrapper">
-                            <input type="text" 
-                                   name="q" 
-                                   value="{{ query }}" 
-                                   placeholder="店名、住所、キーワードで検索..."
-                                   class="search-input"
-                                   id="searchInput">
-                            <div class="search-input-icon">
-                                <i data-feather="search"></i>
-                            </div>
-                        </div>
-                        <button type="submit" class="search-btn">
-                            <i data-feather="search"></i>
-                            <span>検索</span>
-                        </button>
-                    </div>
-                    
-                    <!-- 高度な検索オプション -->
-                    <div class="search-filters" id="searchFilters">
-                        <div class="filter-row">
-                            <div class="filter-group">
-                                <label class="filter-label">
-                                    <i data-feather="users"></i>
-                                    座席数
-                                </label>
-                                <select name="seats" class="filter-select">
-                                    <option value="">指定なし</option>
-                                    <option value="1-20">1-20席</option>
-                                    <option value="21-50">21-50席</option>
-                                    <option value="51-100">51-100席</option>
-                                    <option value="100+">100席以上</option>
-                                </select>
-                            </div>
-                            
-                            <div class="filter-group">
-                                <label class="filter-label">
-                                    <i data-feather="map-pin"></i>
-                                    エリア
-                                </label>
-                                <select name="area" class="filter-select">
-                                    <option value="">全エリア</option>
-                                    <option value="名古屋駅">名古屋駅周辺</option>
-                                    <option value="栄">栄・錦</option>
-                                    <option value="大須">大須</option>
-                                    <option value="金山">金山</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="filter-actions">
-                            <button type="button" class="btn-filter-reset" onclick="resetFilters()">
-                                <i data-feather="refresh-cw"></i>
-                                リセット
-                            </button>
-                            <button type="button" class="btn-filter-toggle" onclick="toggleFilters()">
-                                <i data-feather="filter"></i>
-                                詳細検索
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+            {% endif %}         
         </div>
     </div>
 
@@ -128,38 +101,39 @@
             </div>
 
             <!-- 店舗リスト -->
-            <div class="shops-list" id="shopsList">
+            <div class="shops-grid" id="shopsList">
                 {% for shop in shops %}
-                    <div class="shop-result-card" data-shop-name="{{ shop.name }}" data-seats="{{ shop.seat_count }}" data-images="{{ shop.images.count }}">
-                        <a href="{% url 'shops:shop_detail' shop.pk %}" class="shop-result-link">
-                            <!-- 画像部分 -->
-                            <div class="shop-image-section">
+                    <div class="shop-card" data-shop-name="{{ shop.name }}" data-seats="{{ shop.seat_count }}" data-images="{{ shop.images.count }}">
+                        <a href="{% url 'shops:shop_detail' shop.pk %}" class="shop-link">
+                            <!-- 画像ギャラリー -->
+                            <div class="shop-gallery">
                                 {% if shop.images.exists %}
-                                    <div class="image-gallery-mini">
-                                        <div class="main-image">
-                                            <img src="{{ shop.images.first.image.url }}" 
-                                                 alt="{{ shop.name }}"
-                                                 class="shop-main-image">
+                                    <div class="image-main">
+                                        <img src="{{ shop.images.first.image.url }}" 
+                                             alt="{{ shop.name }}"
+                                             class="main-image">
+                                        <div class="image-overlay">
+                                            <i data-feather="zoom-in"></i>
                                         </div>
-                                        
-                                        {% if shop.images.count > 1 %}
-                                            <div class="image-thumbnails-mini">
-                                                {% for image in shop.images.all|slice:"1:4" %}
-                                                    <div class="thumbnail-mini">
-                                                        <img src="{{ image.image.url }}" alt="{{ shop.name }}">
-                                                    </div>
-                                                {% endfor %}
-                                                
-                                                {% if shop.images.count > 4 %}
-                                                    <div class="thumbnail-mini more-indicator">
-                                                        <span>+{{ shop.images.count|add:"-4" }}</span>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                        {% endif %}
                                     </div>
+                                    
+                                    {% if shop.images.count > 1 %}
+                                        <div class="image-thumbnails">
+                                            {% for image in shop.images.all|slice:"1:4" %}
+                                                <div class="thumbnail">
+                                                    <img src="{{ image.image.url }}" alt="{{ shop.name }}">
+                                                </div>
+                                            {% endfor %}
+                                            
+                                            {% if shop.images.count > 4 %}
+                                                <div class="thumbnail more-photos">
+                                                    <span>+{{ shop.images.count|add:"-4" }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
                                 {% else %}
-                                    <div class="no-image-placeholder">
+                                    <div class="no-image">
                                         <i data-feather="image"></i>
                                         <span>画像準備中</span>
                                     </div>
@@ -174,15 +148,13 @@
                                 {% endif %}
                             </div>
 
-                            <!-- 店舗情報部分 -->
-                            <div class="shop-info-section">
+                            <!-- ショップ情報 -->
+                            <div class="shop-content">
                                 <div class="shop-header">
-                                    <h3 class="shop-name">{{ shop.name }}</h3>
-                                    <div class="shop-badges">
-                                        <span class="badge-featured">
-                                            <i data-feather="star"></i>
-                                            おすすめ
-                                        </span>
+                                    <h2 class="shop-name">{{ shop.name }}</h2>
+                                    <div class="shop-badge">
+                                        <i data-feather="award"></i>
+                                        <span>おすすめ</span>
                                     </div>
                                 </div>
 
@@ -203,38 +175,28 @@
                                     </div>
                                 </div>
 
-                                <div class="shop-meta">
-                                    {% if shop.images.count > 0 %}
-                                        <span class="meta-item">
-                                            <i data-feather="camera"></i>
-                                            {{ shop.images.count }}枚の写真
-                                        </span>
-                                    {% endif %}
-                                    <span class="meta-item">
-                                        <i data-feather="clock"></i>
-                                        営業時間は店舗にお問い合わせください
-                                    </span>
+                                <!-- アクションボタン -->
+                                <div class="shop-actions">
+                                    <button class="btn-favorite" data-shop-id="{{ shop.pk }}" onclick="toggleFavorite(event, {{ shop.pk }})">
+                                        <i data-feather="heart"></i>
+                                        <span>お気に入り</span>
+                                    </button>
+                                    
+                                    <button class="btn-share" data-shop-id="{{ shop.pk }}" onclick="shareShop(event, {{ shop.pk }})">
+                                        <i data-feather="share-2"></i>
+                                        <span>共有</span>
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- ホバーエフェクト -->
-                            <div class="shop-hover-overlay">
-                                <div class="hover-content">
+                            <!-- ホバーエフェクト用オーバーレイ -->
+                            <div class="shop-overlay">
+                                <div class="overlay-content">
                                     <i data-feather="external-link"></i>
                                     <span>詳細を見る</span>
                                 </div>
                             </div>
                         </a>
-
-                        <!-- アクションボタン -->
-                        <div class="shop-actions">
-                            <button class="action-btn btn-favorite" data-shop-id="{{ shop.pk }}" onclick="toggleFavorite(event, {{ shop.pk }})">
-                                <i data-feather="heart"></i>
-                            </button>
-                            <button class="action-btn btn-share" data-shop-id="{{ shop.pk }}" onclick="shareShop(event, {{ shop.pk }})">
-                                <i data-feather="share-2"></i>
-                            </button>
-                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -289,12 +251,101 @@
 <!-- =================================== -->
 <style>
 /* =================================== */
+/* パンくずリスト */
+/* =================================== */
+.breadcrumb-container {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 2rem;
+}
+
+.breadcrumb-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+}
+
+.breadcrumb-list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-link {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid transparent;
+}
+
+.breadcrumb-link:hover {
+    color: var(--primary);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--primary-light);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+}
+
+.breadcrumb-link i {
+    width: 1rem;
+    height: 1rem;
+}
+
+.breadcrumb-current .breadcrumb-text {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.breadcrumb-current .breadcrumb-text i {
+    width: 1rem;
+    height: 1rem;
+}
+
+.breadcrumb-divider {
+    color: var(--gray-400);
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-divider i {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* =================================== */
 /* 基本レイアウト */
 /* =================================== */
 .search-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 1rem;
+    width: 100%;
 }
 
 /* =================================== */
@@ -308,6 +359,7 @@
     margin-bottom: 3rem;
     overflow: hidden;
     color: white;
+    width: 100%;
 }
 
 .hero-background {
@@ -471,20 +523,24 @@
 /* =================================== */
 /* 検索フィルター */
 /* =================================== */
-.search-filters {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.search-filters.expanded {
-    max-height: 200px;
-}
+        .search-filters {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-filters.collapsed {
+            padding: 1rem 2rem;
+        }
+        
+        .search-filters.collapsed .filter-grid,
+        .search-filters.collapsed .filter-actions {
+            display: none;
+        }
 
 .filter-row {
     display: grid;
@@ -618,77 +674,105 @@
 /* =================================== */
 /* 店舗結果カード */
 /* =================================== */
-.shops-list {
-    display: flex;
-    flex-direction: column;
+.shops-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
+    margin-bottom: 3rem;
 }
 
-.shop-result-card {
-    position: relative;
+.shop-card {
     background: white;
-    border-radius: 1.5rem;
+    border-radius: 1.25rem;
     overflow: hidden;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
+    position: relative;
     border: 1px solid var(--gray-200);
 }
 
-.shop-result-card:hover {
+.shop-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-.shop-result-link {
+.shop-link {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 200px 1fr;
     text-decoration: none;
     color: inherit;
-}
-
-.shop-image-section {
-    position: relative;
-    height: 200px;
-}
-
-.image-gallery-mini {
     height: 100%;
 }
 
-.main-image {
-    height: 70%;
+/* 画像ギャラリー */
+.shop-gallery {
+    position: relative;
+    height: 160px;
     overflow: hidden;
 }
 
-.shop-main-image {
+.image-main {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
+.main-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s ease;
 }
 
-.shop-result-card:hover .shop-main-image {
+.shop-card:hover .main-image {
     transform: scale(1.1);
 }
 
-.image-thumbnails-mini {
+.image-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
     display: flex;
-    height: 30%;
-    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.thumbnail-mini {
-    flex: 1;
+.shop-card:hover .image-overlay {
+    opacity: 1;
+}
+
+.image-thumbnails {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+}
+
+.thumbnail {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.375rem;
     overflow: hidden;
+    border: 1px solid white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.thumbnail-mini img {
+.thumbnail img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.more-indicator {
+.more-photos {
     background: rgba(0, 0, 0, 0.8);
     color: white;
     display: flex;
@@ -698,7 +782,7 @@
     font-weight: 600;
 }
 
-.no-image-placeholder {
+.no-image {
     height: 100%;
     background: var(--gray-100);
     display: flex;
@@ -709,15 +793,15 @@
     gap: 0.5rem;
 }
 
-.no-image-placeholder i {
+.no-image i {
     width: 2rem;
     height: 2rem;
 }
 
 .image-count-badge {
     position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
+    top: 0.5rem;
+    left: 0.5rem;
     background: rgba(0, 0, 0, 0.8);
     color: white;
     padding: 0.25rem 0.5rem;
@@ -734,35 +818,37 @@
     height: 0.875rem;
 }
 
-.shop-info-section {
-    padding: 1.5rem;
+/* ショップコンテンツ */
+.shop-content {
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    height: 160px;
 }
 
 .shop-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
 }
 
 .shop-name {
-    font-size: 1.5rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: var(--gray-800);
     margin: 0;
     line-height: 1.3;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
 }
 
-.shop-badges {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.badge-featured {
+.shop-badge {
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -773,26 +859,31 @@
     font-size: 0.75rem;
     font-weight: 600;
     white-space: nowrap;
+    margin-left: 0.5rem;
 }
 
-.badge-featured i {
-    width: 0.75rem;
-    height: 0.75rem;
+.shop-badge i {
+    width: 0.875rem;
+    height: 0.875rem;
 }
 
 .shop-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    flex: 1;
 }
 
 .detail-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
     color: var(--gray-600);
     font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.detail-item:last-child {
+    margin-bottom: 0;
 }
 
 .detail-item i {
@@ -802,26 +893,113 @@
     flex-shrink: 0;
 }
 
-.shop-meta {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+.detail-item span {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    line-clamp: 1;
+    overflow: hidden;
+    flex: 1;
 }
 
-.meta-item {
+/* アクションボタン */
+.shop-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-favorite,
+.btn-share {
+    flex: 1;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.375rem;
-    color: var(--gray-500);
+    padding: 0.5rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 0.5rem;
+    background: white;
+    color: var(--gray-600);
     font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.meta-item i {
+.btn-favorite:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.btn-share:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #2563eb;
+}
+
+.btn-favorite i,
+.btn-share i {
     width: 0.875rem;
     height: 0.875rem;
 }
 
-.shop-hover-overlay {
+/* レスポンシブデザイン - モバイル対応 */
+@media (max-width: 768px) {
+    .shops-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .shop-link {
+        grid-template-columns: 120px 1fr;
+    }
+    
+    .shop-gallery {
+        height: 100px;
+    }
+    
+    .shop-content {
+        height: 100px;
+        padding: 0.5rem;
+    }
+    
+    .shop-name {
+        font-size: 0.875rem;
+    }
+    
+    .detail-item {
+        font-size: 0.75rem;
+        gap: 0.375rem;
+        margin-bottom: 0.375rem;
+    }
+    
+    .detail-item i {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+    
+    .shop-badge {
+        font-size: 0.625rem;
+        padding: 0.25rem 0.375rem;
+    }
+    
+    .btn-favorite,
+    .btn-share {
+        font-size: 0.625rem;
+        padding: 0.375rem;
+        gap: 0.25rem;
+    }
+    
+    .btn-favorite i,
+    .btn-share i {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+}
+
+/* ホバーオーバーレイ */
+.shop-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -833,71 +1011,25 @@
     justify-content: center;
     opacity: 0;
     transition: opacity 0.3s ease;
-    border-radius: 1.5rem;
+    border-radius: 1.25rem;
 }
 
-.shop-result-card:hover .shop-hover-overlay {
+.shop-card:hover .shop-overlay {
     opacity: 1;
 }
 
-.hover-content {
+.overlay-content {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     color: white;
     font-weight: 600;
-    font-size: 1.125rem;
+    font-size: 1rem;
 }
 
-.hover-content i {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-.shop-actions {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    display: flex;
-    gap: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.shop-result-card:hover .shop-actions {
-    opacity: 1;
-}
-
-.action-btn {
-    width: 2.5rem;
-    height: 2.5rem;
-    background: rgba(255, 255, 255, 0.9);
-    border: none;
-    border-radius: 50%;
-    color: var(--gray-600);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.action-btn:hover {
-    background: white;
-    transform: scale(1.1);
-}
-
-.action-btn i {
+.overlay-content i {
     width: 1.25rem;
     height: 1.25rem;
-}
-
-.btn-favorite:hover {
-    color: #dc2626;
-}
-
-.btn-share:hover {
-    color: #2563eb;
 }
 
 /* =================================== */
@@ -1035,8 +1167,8 @@
 /* レスポンシブデザイン */
 /* =================================== */
 @media (max-width: 1024px) {
-    .shop-result-link {
-        grid-template-columns: 250px 1fr;
+    .breadcrumb-wrapper {
+        padding: 0.875rem 1rem;
     }
     
     .search-title {
@@ -1049,6 +1181,25 @@
 }
 
 @media (max-width: 768px) {
+    .breadcrumb-wrapper {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .breadcrumb-list {
+        gap: 0.25rem;
+    }
+    
+    .breadcrumb-link,
+    .breadcrumb-current .breadcrumb-text {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .breadcrumb-link span,
+    .breadcrumb-current .breadcrumb-text span {
+        display: none;
+    }
+    
     .search-container {
         padding: 0.5rem;
     }
@@ -1066,12 +1217,9 @@
         flex-direction: column;
     }
     
-    .shop-result-link {
+    .shops-grid {
         grid-template-columns: 1fr;
-    }
-    
-    .shop-image-section {
-        height: 250px;
+        gap: 0.75rem;
     }
     
     .results-header {
@@ -1092,6 +1240,13 @@
 }
 
 @media (max-width: 480px) {
+    .breadcrumb-link i,
+    .breadcrumb-current .breadcrumb-text i,
+    .breadcrumb-divider i {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+    
     .search-title {
         font-size: 1.75rem;
     }
@@ -1100,17 +1255,21 @@
         font-size: 1rem;
     }
     
-    .shop-info-section {
-        padding: 1rem;
+    .shop-content {
+        padding: 0.75rem;
     }
     
     .shop-name {
-        font-size: 1.25rem;
+        font-size: 1rem;
     }
     
     .shop-header {
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.5rem;
+    }
+    
+    .shop-gallery {
+        height: 160px;
     }
 }
 </style>
@@ -1124,12 +1283,12 @@ function toggleFilters() {
     const filters = document.getElementById('searchFilters');
     const toggleBtn = document.querySelector('.btn-filter-toggle');
     
-    filters.classList.toggle('expanded');
+    filters.classList.toggle('collapsed');
     
-    if (filters.classList.contains('expanded')) {
-        toggleBtn.innerHTML = '<i data-feather="x"></i>詳細検索を閉じる';
+    if (filters.classList.contains('collapsed')) {
+        toggleBtn.innerHTML = '<i data-feather="filter"></i>詳細検索を表示';
     } else {
-        toggleBtn.innerHTML = '<i data-feather="filter"></i>詳細検索';
+        toggleBtn.innerHTML = '<i data-feather="x"></i>詳細検索を閉じる';
     }
     
     feather.replace();
@@ -1152,7 +1311,7 @@ function clearSearch() {
 // ソート機能
 function sortResults(sortBy) {
     const shopsList = document.getElementById('shopsList');
-    const shops = Array.from(shopsList.querySelectorAll('.shop-result-card'));
+    const shops = Array.from(shopsList.querySelectorAll('.shop-card'));
     
     shops.sort((a, b) => {
         switch(sortBy) {
@@ -1176,6 +1335,8 @@ function sortResults(sortBy) {
         shopsList.style.opacity = '1';
     }, 150);
 }
+
+
 
 // お気に入り機能
 function toggleFavorite(event, shopId) {
@@ -1223,15 +1384,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // リアルタイム検索（デバウンス付き）
     let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            // TODO: リアルタイム検索候補の表示
-        }, 300);
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // TODO: リアルタイム検索候補の表示
+            }, 300);
+        });
+    }
     
     // 検索結果のアニメーション
-    const shopCards = document.querySelectorAll('.shop-result-card');
+    const shopCards = document.querySelectorAll('.shop-card');
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry, index) => {
             if (entry.isIntersecting) {
@@ -1251,6 +1414,9 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
+    
+    // Feather Iconsの初期化
+    feather.replace();
 });
 </script>
 {% endblock %}
