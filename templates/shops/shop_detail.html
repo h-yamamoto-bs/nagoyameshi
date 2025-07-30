@@ -185,10 +185,16 @@
                                 <span class="rating-text">4.2 (レビュー機能準備中)</span>
                             </div>
                         </div>
-                        <button class="btn-review">
-                            <i data-feather="edit"></i>
-                            レビューを書く
-                        </button>
+                        {% if user.is_authenticated %}
+                            <button class="btn-review">
+                                <i data-feather="edit"></i>
+                                レビューを書く
+                            </button>
+                        {% else %}
+                            <p class="login-required">
+                                <a href="{% url 'accounts:login' %}">ログイン</a>してレビューを投稿
+                            </p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -816,6 +822,23 @@
 .rating-text {
     font-weight: 600;
     color: var(--gray-700);
+}
+
+.login-required {
+    margin-top: 1rem;
+    text-align: center;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.login-required a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-required a:hover {
+    text-decoration: underline;
 }
 
 /* =================================== */
@@ -1652,22 +1675,44 @@ function handleReviewSubmit(e) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i data-feather="loader"></i>投稿中...';
     
-    // TODO: 実際のAPI送信処理
-    // ここでは仮の処理として、2秒後に成功メッセージを表示
-    setTimeout(() => {
-        alert(`レビューを投稿しました！\n評価: ${rating}つ星\nコメント: ${comment || '(コメントなし)'}`);
-        closeReviewModal();
-        
+    // CSRFトークンの取得
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // 実際のAPI送信処理
+    fetch('{% url "shops:submit_review" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'shop_id': shopId,
+            'rating': rating,
+            'comment': comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`レビューが投稿されました！\n評価: ${rating}つ星\nコメント: ${comment || '(コメントなし)'}`);
+            closeReviewModal();
+            
+            // ページをリロードして最新の情報を表示
+            window.location.reload();
+        } else {
+            alert('エラー: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('ネットワークエラーが発生しました。');
+    })
+    .finally(() => {
         // ボタンを元に戻す
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
-        
-        // アイコンを再初期化
         feather.replace();
-    }, 2000);
-    
-    // アイコンを再初期化（ローダー表示のため）
-    feather.replace();
+    });
 }
 </script>
 {% endblock %}

@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import User
+from django.utils import timezone
 
 # Create your models here.
 class Shop(models.Model):
@@ -27,11 +28,19 @@ class Image(models.Model):
     
 class Review(models.Model):
     shop = models.ForeignKey(Shop, related_name='reviews', on_delete=models.CASCADE)
-    rating = models.PositiveIntegerField(null=False, blank=False)
-    comment = models.TextField(null=True, blank=True)
+    user = models.ForeignKey(User, related_name='reviews', on_delete=models.CASCADE, null=True, blank=True)
+    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)], null=False, blank=False)
+    comment = models.TextField(max_length=1000, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'reviews'
+        unique_together = ('shop', 'user')  # 1つの店舗に対してユーザーは1つのレビューのみ
+
+    def __str__(self):
+        user_email = self.user.email if self.user else "Unknown"
+        return f'{user_email} - {self.shop.name} ({self.rating}★)'
 
 class History(models.Model):
     shop = models.ForeignKey(Shop, related_name='histories', on_delete=models.CASCADE)
