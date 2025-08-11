@@ -50,8 +50,6 @@ class Subscription(models.Model):
     start_date = models.DateField(auto_now_add=True)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    job = models.CharField(max_length=100, null=True, blank=True)
-    birth_year = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         db_table = 'subscriptions'

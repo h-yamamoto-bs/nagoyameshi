@@ -1,6 +1,9 @@
-[shop_detail.html](http://_vscodecontentref_/1){% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
+<!-- CSRFトークンをページに含める -->
+{% csrf_token %}
+
 <div class="shop-detail-container">
     <!-- =================================== -->
     <!-- パンくずナビゲーション -->
@@ -103,10 +106,20 @@
                 
                 <!-- アクションボタン -->
                 <div class="action-buttons">
-                    <button class="btn-favorite" data-shop-id="{{ shop.pk }}">
-                        <i data-feather="heart"></i>
-                        <span>お気に入り</span>
-                    </button>
+                    {% if user.is_authenticated %}
+                        <button class="btn-favorite" 
+                                data-shop-id="{{ shop.pk }}"
+                                data-is-favorited="{{ is_favorited|yesno:'true,false' }}"
+                                data-favorite-count="{{ favorite_count }}">
+                            <i class="favorite-icon" data-feather="heart"></i>
+                            <span class="favorite-text">お気に入り</span>
+                        </button>
+                    {% else %}
+                        <a href="{% url 'accounts:login' %}" class="btn-favorite btn-login-required">
+                            <i class="favorite-icon" data-feather="heart"></i>
+                            <span class="favorite-text">お気に入り（要ログイン）</span>
+                        </a>
+                    {% endif %}
                     <button class="btn-share" data-shop-id="{{ shop.pk }}">
                         <i data-feather="share-2"></i>
                         <span>共有</span>
@@ -185,16 +198,22 @@
                                 <span class="rating-text">4.2 (レビュー機能準備中)</span>
                             </div>
                         </div>
-                        {% if user.is_authenticated %}
-                            <button class="btn-review">
-                                <i data-feather="edit"></i>
-                                レビューを書く
-                            </button>
-                        {% else %}
-                            <p class="login-required">
-                                <a href="{% url 'accounts:login' %}">ログイン</a>してレビューを投稿
-                            </p>
-                        {% endif %}
+                        <div class="review-actions-group">
+                            {% if user.is_authenticated %}
+                                <button class="btn-review">
+                                    <i data-feather="edit"></i>
+                                    レビューを書く
+                                </button>
+                            {% else %}
+                                <p class="login-required">
+                                    <a href="{% url 'accounts:login' %}">ログイン</a>してレビューを投稿
+                                </p>
+                            {% endif %}
+                            <a href="{% url 'shops:shop_review_list' shop.pk %}" class="btn-view-reviews">
+                                <i data-feather="message-square"></i>
+                                レビュー一覧を見る
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -774,23 +793,43 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: var(--gray-300);
-    color: var(--gray-600);
+    background: var(--primary);
+    color: white;
     border: none;
     border-radius: 0.75rem;
     font-weight: 500;
-    margin-top: 1rem;
-    cursor: not-allowed;
-}
-
-.btn-review {
-    background: var(--primary);
-    color: white;
     cursor: pointer;
+    margin-right: 1rem;
 }
 
 .btn-review:hover {
     background: var(--primary-dark);
+}
+
+.btn-view-reviews {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    text-decoration: none;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-view-reviews:hover {
+    background: var(--gray-200);
+    color: var(--gray-800);
+}
+
+.review-actions-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
 }
 
 .review-stats {
@@ -1496,21 +1535,30 @@ document.getElementById('lightbox').addEventListener('click', function(e) {
 
 // お気に入り・共有ボタンの機能
 document.addEventListener('DOMContentLoaded', function() {
-    // お気に入りボタン
-    const favoriteBtn = document.querySelector('.btn-favorite');
-    if (favoriteBtn) {
-        favoriteBtn.addEventListener('click', function() {
-            const shopId = this.dataset.shopId;
-            // アニメーション効果
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = 'scale(1)';
-            }, 150);
+    console.log('DOM loaded, initializing favorite button...');
+    
+    // お気に入りボタン（ログインユーザーのみ）
+    {% if user.is_authenticated %}
+        const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
+        console.log('Favorite button found:', favoriteBtn);
+        
+        if (favoriteBtn) {
+            const shopId = favoriteBtn.dataset.shopId;
+            console.log('Shop ID:', shopId);
             
-            // TODO: お気に入り登録API
-            console.log('お気に入りに追加:', shopId);
-        });
-    }
+            // 初期状態を設定（データ属性から取得）
+            const isFavorited = favoriteBtn.dataset.isFavorited === 'true';
+            const favoriteCount = parseInt(favoriteBtn.dataset.favoriteCount) || 0;
+            console.log('Initial state - isFavorited:', isFavorited, 'favoriteCount:', favoriteCount);
+            
+            updateFavoriteButton(isFavorited, favoriteCount);
+            
+            favoriteBtn.addEventListener('click', function() {
+                console.log('Favorite button clicked!');
+                toggleFavorite(shopId);
+            });
+        }
+    {% endif %}
     
     // 共有ボタン
     const shareBtn = document.querySelector('.btn-share');
@@ -1714,5 +1762,304 @@ function handleReviewSubmit(e) {
         feather.replace();
     });
 }
+
+// =================================== //
+// お気に入り機能
+// =================================== //
+
+// お気に入りリクエストの状態管理
+let favoriteRequestInProgress = false;
+
+function toggleFavorite(shopId) {
+    console.log('toggleFavorite called with shopId:', shopId);
+    
+    // 既にリクエスト中の場合は処理を中断
+    if (favoriteRequestInProgress) {
+        console.log('Favorite request already in progress, skipping...');
+        return;
+    }
+    
+    // ログイン状態の確認
+    {% if not user.is_authenticated %}
+        alert('お気に入り機能を使用するにはログインが必要です。');
+        window.location.href = '{% url "accounts:login" %}';
+        return;
+    {% endif %}
+    
+    const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
+    if (!favoriteBtn) {
+        console.log('Favorite button not found');
+        return;
+    }
+    
+    // リクエスト開始フラグを設定
+    favoriteRequestInProgress = true;
+    
+    // ボタンを無効化
+    favoriteBtn.disabled = true;
+    favoriteBtn.style.opacity = '0.6';
+    favoriteBtn.style.cursor = 'not-allowed';
+    
+    // アニメーション効果
+    favoriteBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        favoriteBtn.style.transform = 'scale(1)';
+    }, 150);
+    
+    // CSRFトークンの取得（複数の方法を試す）
+    let csrfToken = null;
+    
+    // 方法1: input要素から取得
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        csrfToken = csrfInput.value;
+        console.log('CSRF token from input:', csrfToken);
+    }
+    
+    // 方法2: metaタグから取得（フォールバック）
+    if (!csrfToken) {
+        const csrfMeta = document.querySelector('meta[name=csrf-token]');
+        if (csrfMeta) {
+            csrfToken = csrfMeta.getAttribute('content');
+            console.log('CSRF token from meta:', csrfToken);
+        }
+    }
+    
+    // 方法3: Cookieから取得（フォールバック）
+    if (!csrfToken) {
+        // Django標準のCSRF Cookieの取得関数
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        csrfToken = getCookie('csrftoken');
+        if (csrfToken) {
+            console.log('CSRF token from cookie:', csrfToken);
+        }
+    }
+    
+    // デバッグ: 全てのCSRFトークン要素を検索
+    console.log('All CSRF input elements:', document.querySelectorAll('[name=csrfmiddlewaretoken]'));
+    console.log('All meta csrf elements:', document.querySelectorAll('meta[name=csrf-token]'));
+    console.log('Document cookies:', document.cookie);
+    
+    console.log('CSRF token found:', csrfToken ? 'Yes' : 'No');
+    console.log('CSRF token value:', csrfToken);
+    
+    if (!csrfToken) {
+        alert('CSRFトークンが見つかりません。ページを再読み込みしてください。');
+        return;
+    }
+    
+    const url = `${window.location.protocol}//${window.location.host}/shops/favorite/toggle/${shopId}/`;
+    console.log('Making request to:', url);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // レスポンスの内容をテキストとして取得してログ出力
+        return response.text().then(text => {
+            console.log('Raw response text:', text);
+            try {
+                return JSON.parse(text);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response text that failed to parse:', text);
+                throw new Error('サーバーからの応答をJSONとして解析できませんでした。');
+            }
+        });
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            updateFavoriteButton(data.is_favorited, data.favorite_count);
+            // 小さなフィードバック表示
+            showToast(data.message);
+        } else {
+            console.error('API Error:', data.message);
+            alert('API Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error details:', error);
+        alert('サーバーエラー: ' + error.message);
+    })
+    .finally(() => {
+        // リクエスト完了フラグを解除
+        favoriteRequestInProgress = false;
+        
+        // ボタンを再有効化
+        const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
+        if (favoriteBtn) {
+            favoriteBtn.disabled = false;
+            favoriteBtn.style.opacity = '1';
+            favoriteBtn.style.cursor = 'pointer';
+        }
+        
+        console.log('Favorite request completed');
+    });
+}
+
+function updateFavoriteButton(isFavorited, favoriteCount) {
+    console.log('updateFavoriteButton called with:', isFavorited, favoriteCount);
+    
+    const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
+    if (!favoriteBtn) {
+        console.log('No favorite button found or user not logged in');
+        return;
+    }
+    
+    const icon = favoriteBtn.querySelector('.favorite-icon');
+    const text = favoriteBtn.querySelector('.favorite-text');
+    
+    if (!icon) {
+        console.error('Icon element not found in button:', favoriteBtn);
+        return;
+    }
+    
+    if (!text) {
+        console.error('Text element not found in button:', favoriteBtn);
+        return;
+    }
+    
+    if (isFavorited) {
+        favoriteBtn.classList.add('favorited');
+        icon.setAttribute('data-feather', 'heart');
+        text.textContent = `お気に入り済み (${favoriteCount})`;
+        console.log('Button updated to favorited state');
+    } else {
+        favoriteBtn.classList.remove('favorited');
+        icon.setAttribute('data-feather', 'heart');
+        text.textContent = `お気に入り (${favoriteCount})`;
+        console.log('Button updated to not favorited state');
+    }
+    
+    // Featherアイコンを再描画
+    try {
+        feather.replace();
+        console.log('Feather icons replaced successfully');
+    } catch (featherError) {
+        console.error('Feather replace error:', featherError);
+    }
+}
+
+function showToast(message) {
+    // 簡単なトースト通知
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--primary);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
+}
 </script>
+
+<style>
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* お気に入り済みスタイル */
+.btn-favorite.favorited {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    border-color: #dc2626;
+}
+
+.btn-favorite.favorited:hover {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+}
+
+.btn-favorite.favorited i {
+    fill: currentColor;
+}
+
+/* ログイン要求ボタンのスタイル */
+.btn-favorite.btn-login-required {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
+    color: var(--gray-600);
+    text-decoration: none;
+}
+
+.btn-favorite.btn-login-required:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+    color: var(--gray-700);
+}
+
+/* お気に入りボタン無効化時のスタイル */
+.btn-favorite:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-favorite:disabled:hover {
+    background: inherit;
+    border-color: inherit;
+    color: inherit;
+    transform: none;
+}
+</style>
 {% endblock %}

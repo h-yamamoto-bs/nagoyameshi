@@ -59,6 +59,9 @@ class Favorite(models.Model):
         db_table = 'favorites'
         unique_together = ('shop', 'user')
 
+    def __str__(self):
+        return f"{self.user.email} - {self.shop.name}"
+
 class category(models.Model):
     name = models.CharField(max_length=50, unique=True)
 

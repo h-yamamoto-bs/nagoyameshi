@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
-from .models import User
+from .models import User, Subscription
+from shops.models import Favorite, Review
 from django.views.generic import ListView, TemplateView
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -8,6 +9,9 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
 
 # ユーザー一覧
 class AccountListView(ListView):
@@ -52,7 +56,7 @@ class LoginView(TemplateView):
                 messages.error(request, 'メールアドレスまたはパスワードが間違っています。')
         
         except User.DoesNotExist:
-            messages.error(request, 'メールアドレスまたはパスワードが間違っています。')
+            messages.error(request, 'このメールアドレスは登録されていません。新規登録をお試しください。')
         
         # ログイン失敗時の処理
         return render(request, self.template_name, {
@@ -109,7 +113,127 @@ class MyPageView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # サブスクリプション情報の取得
+        try:
+            subscription = user.subscription
+        except Subscription.DoesNotExist:
+            subscription = None
+        
+        # お気に入り一覧の取得（最新5件）
+        favorites = Favorite.objects.filter(user=user).select_related('shop').order_by('-id')[:5]
+        
+        # レビュー一覧の取得（最新5件）
+        reviews = Review.objects.filter(user=user).select_related('shop').order_by('-created_at')[:5]
+        
+        # 統計情報
+        favorite_count = Favorite.objects.filter(user=user).count()
+        review_count = Review.objects.filter(user=user).count()
+        
+        context.update({
+            'subscription': subscription,
+            'favorites': favorites,
+            'reviews': reviews,
+            'favorite_count': favorite_count,
+            'review_count': review_count,
+        })
         return context
+
+
+@login_required
+@require_POST
+def update_profile(request):
+    """プロフィール更新API"""
+    try:
+        user = request.user
+        
+        # フォームデータの取得
+        email = request.POST.get('email', '').strip()
+        job = request.POST.get('job', '').strip()
+        birth_year = request.POST.get('birth_year', '').strip()
+        
+        # バリデーション
+        if not email:
+            return JsonResponse({
+                'success': False,
+                'message': 'メールアドレスは必須です。'
+            }, status=400)
+        
+        # メールアドレスの重複チェック（自分以外）
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'このメールアドレスは既に使用されています。'
+            }, status=400)
+        
+        # 生年の検証
+        if birth_year:
+            try:
+                birth_year = int(birth_year)
+                if birth_year < 1900 or birth_year > 2025:
+                    return JsonResponse({
+                        'success': False,
+                        'message': '生年は1900年から2025年の間で入力してください。'
+                    }, status=400)
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'message': '生年は数値で入力してください。'
+                }, status=400)
+        else:
+            birth_year = None
+        
+        # ユーザー情報の更新
+        user.email = email
+        user.job = job if job else None
+        user.birth_year = birth_year
+        user.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'プロフィールが更新されました。'
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'サーバーエラーが発生しました。'
+        }, status=500)
+
+
+@login_required
+@require_POST  
+def update_subscription(request):
+    """サブスクリプション情報更新API"""
+    try:
+        user = request.user
+        
+        # フォームデータの取得
+        is_active = request.POST.get('is_active') == 'true'
+        
+        # サブスクリプション情報の取得または作成
+        subscription, created = Subscription.objects.get_or_create(
+            user=user,
+            defaults={'is_active': is_active}
+        )
+        
+        if not created:
+            # 既存のサブスクリプション情報を更新
+            subscription.is_active = is_active
+            subscription.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'サブスクリプション情報が更新されました。'
+        })
+    
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'サーバーエラーが発生しました。'
+        }, status=500)
+
 
 # ログアウト
 def logout_view(request):

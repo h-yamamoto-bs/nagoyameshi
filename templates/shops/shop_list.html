@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- CSRFトークンをページに埋め込み -->
+{% csrf_token %}
+
 <div class="shops-container">
     <!-- =================================== -->
     <!-- ヘロセクション -->
@@ -33,7 +36,8 @@
     <!-- ショップリスト -->
     <!-- =================================== -->
     <div class="shops-grid">
-        {% for shop in shops %}
+        {% for shop_data in shops_with_favorites %}
+            {% with shop=shop_data.shop %}
             <div class="shop-card" data-shop-id="{{ shop.pk }}">
                 <a href="{% url 'shops:shop_detail' shop.pk %}" class="shop-link">
                     <!-- =================================== -->
@@ -114,12 +118,17 @@
                         <!-- アクションボタン -->
                         <!-- =================================== -->
                         <div class="shop-actions">
-                            <button class="btn-favorite" data-shop-id="{{ shop.pk }}">
+                            <button class="btn-favorite {% if shop_data.is_favorited %}favorited{% endif %}" 
+                                    data-shop-id="{{ shop.pk }}"
+                                    data-is-favorited="{{ shop_data.is_favorited|yesno:'true,false' }}"
+                                    data-favorite-count="{{ shop_data.favorite_count }}">
                                 <i data-feather="heart"></i>
-                                <span>お気に入り</span>
+                                <span>{% if shop_data.is_favorited %}お気に入り済み{% else %}お気に入り{% endif %} ({{ shop_data.favorite_count }})</span>
                             </button>
                             
-                            <button class="btn-share" data-shop-id="{{ shop.pk }}">
+                            <button class="btn-share" 
+                                    data-shop-id="{{ shop.pk }}"
+                                    onclick="event.preventDefault(); event.stopPropagation(); shareShop({{ shop.pk }});">
                                 <i data-feather="share-2"></i>
                                 <span>共有</span>
                             </button>
@@ -127,16 +136,9 @@
                     </div>
 
                     <!-- =================================== -->
-                    <!-- ホバーエフェクト用オーバーレイ -->
-                    <!-- =================================== -->
-                    <div class="shop-overlay">
-                        <div class="overlay-content">
-                            <i data-feather="external-link"></i>
-                            <span>詳細を見る</span>
-                        </div>
-                    </div>
                 </a>
             </div>
+            {% endwith %}
         {% empty %}
             <!-- =================================== -->
             <!-- 店舗がない場合のメッセージ -->
@@ -521,40 +523,6 @@
 /* =================================== */
 /* ホバーオーバーレイ */
 /* =================================== */
-.shop-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(99, 102, 241, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: 1.5rem;
-}
-
-.shop-card:hover .shop-overlay {
-    opacity: 1;
-}
-
-.overlay-content {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: white;
-    font-weight: 600;
-    font-size: 1.125rem;
-}
-
-.overlay-content i {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-/* =================================== */
 /* 空の状態 */
 /* =================================== */
 .empty-state {
@@ -699,11 +667,11 @@
 </style>
 
 <script>
-// Feather Iconsの初期化
-feather.replace();
-
 // ショップカードアニメーション
 document.addEventListener('DOMContentLoaded', function() {
+    // まずFeather Iconsを初期化
+    feather.replace();
+    
     const shopCards = document.querySelectorAll('.shop-card');
     
     // Intersection Observer for fade-in animation
@@ -734,7 +702,9 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             
             const heart = this.querySelector('i');
-            const shopId = this.dataset.shopId;
+            const shopId = this.getAttribute('data-shop-id');
+            
+            console.log('Favorite button clicked for shop:', shopId);
             
             // アニメーション効果
             this.style.transform = 'scale(0.9)';
@@ -742,10 +712,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.style.transform = 'scale(1)';
             }, 150);
             
-            // TODO: お気に入り登録のAPI呼び出し
-            console.log('お気に入りに追加:', shopId);
+            // お気に入り登録のAPI呼び出し
+            toggleFavorite(shopId);
         });
     });
+    
+    // 最初からあるお気に入りボタンも初期化
+    // Featherアイコンの読み込みを待ってから初期化
+    setTimeout(() => {
+        // 再度Featherアイコンを置換
+        feather.replace();
+        
+        // 少し待ってから初期化
+        setTimeout(() => {
+            initializeFavoriteButtons();
+        }, 50);
+    }, 200);
     
     // 共有ボタンの機能
     document.querySelectorAll('.btn-share').forEach(btn => {
@@ -771,12 +753,428 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // もっと読み込むボタン
     const loadMoreBtn = document.querySelector('.btn-load-more');
+    const shopGrid = document.querySelector('.shops-grid');
+    let currentOffset = parseInt('{{ shops_with_favorites|length }}');
+    let isLoading = false;
+    
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', function() {
-            // TODO: 追加のショップデータを読み込む
-            console.log('さらに読み込む');
+            if (isLoading) return;
+            
+            isLoading = true;
+            const originalText = loadMoreBtn.innerHTML;
+            loadMoreBtn.innerHTML = '<i data-feather="loader"></i><span>読み込み中...</span>';
+            loadMoreBtn.disabled = true;
+            
+            fetch(`/shops/api/load-more-shops/?offset=${currentOffset}`)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response OK:', response.ok);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Response data:', data);
+                    if (data.success && data.shops.length > 0) {
+                        data.shops.forEach(shop => {
+                            const shopCard = createShopCard(shop);
+                            shopGrid.appendChild(shopCard);
+                        });
+                        
+                        currentOffset += data.shops.length;
+                        
+                        // Featherアイコンを先に初期化
+                        feather.replace();
+                        
+                        // お気に入りボタンのイベントリスナーを新しいカードに追加
+                        initializeFavoriteButtons();
+                        
+                        // もう読み込むデータがない場合はボタンを非表示
+                        if (!data.has_more) {
+                            loadMoreBtn.style.display = 'none';
+                        }
+                        
+                        console.log('Successfully loaded', data.shops.length, 'shops. Total offset:', currentOffset);
+                    } else {
+                        loadMoreBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading more shops:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        name: error.name,
+                        stack: error.stack
+                    });
+                    alert('店舗の読み込みに失敗しました。詳細: ' + error.message);
+                })
+                .finally(() => {
+                    isLoading = false;
+                    loadMoreBtn.innerHTML = originalText;
+                    loadMoreBtn.disabled = false;
+                    feather.replace();
+                });
         });
     }
+    
+    // 新しい店舗カードを作成する関数
+    function createShopCard(shop) {
+        const shopCard = document.createElement('div');
+        shopCard.className = 'shop-card';
+        
+        const imageUrl = shop.image_url || '/static/images/no-image.jpg';
+        const favoriteIcon = shop.is_favorited ? 'heart' : 'heart';
+        const favoriteClass = shop.is_favorited ? 'favorited' : '';
+        
+        shopCard.innerHTML = `
+            <a href="/shops/shop_${shop.id}/" class="shop-link">
+                <div class="shop-gallery">
+                    <div class="image-main">
+                        <img src="${imageUrl}" alt="${shop.name}" class="main-image">
+                        <div class="image-overlay">
+                            <i data-feather="zoom-in"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="shop-content">
+                    <div class="shop-header">
+                        <h2 class="shop-name">${shop.name}</h2>
+                        <div class="shop-badge">
+                            <i data-feather="award"></i>
+                            <span>おすすめ</span>
+                        </div>
+                    </div>
+                    <div class="shop-details">
+                        <div class="detail-item">
+                            <i data-feather="map-pin"></i>
+                            <span>${shop.address}</span>
+                        </div>
+                        <div class="detail-item">
+                            <i data-feather="users"></i>
+                            <span>${shop.seat_count}席</span>
+                        </div>
+                    </div>
+                    <div class="shop-actions">
+                        <button class="btn-favorite ${favoriteClass}" 
+                                data-shop-id="${shop.id}"
+                                data-is-favorited="${shop.is_favorited}"
+                                data-favorite-count="${shop.favorite_count}">
+                            <i data-feather="heart"></i>
+                            <span>${shop.is_favorited ? 'お気に入り済み' : 'お気に入り'} (${shop.favorite_count})</span>
+                        </button>
+                        <button class="btn-share" 
+                                data-shop-id="${shop.id}"
+                                onclick="event.preventDefault(); event.stopPropagation(); shareShop(${shop.id});">
+                            <i data-feather="share-2"></i>
+                            <span>共有</span>
+                        </button>
+                    </div>
+                </div>
+            </a>
+        `;
+        
+        return shopCard;
+    }
+    
+    // お気に入りボタンの初期化（新しく追加されたカードに対して）
+    function initializeFavoriteButtons() {
+        console.log('Initializing favorite buttons...');
+        
+        document.querySelectorAll('.btn-favorite:not([data-initialized])').forEach(btn => {
+            console.log('Processing button:', btn);
+            
+            const shopId = btn.getAttribute('data-shop-id');
+            const isFavorited = btn.getAttribute('data-is-favorited') === 'true';
+            const favoriteCount = parseInt(btn.getAttribute('data-favorite-count')) || 0;
+            
+            console.log('Button data:', { shopId, isFavorited, favoriteCount });
+            
+            // アイコン要素の確認（<i>と<svg>両方を試す）
+            let icon = btn.querySelector('i[data-feather="heart"]');
+            if (!icon) {
+                icon = btn.querySelector('svg');
+            }
+            
+            console.log('Icon element found:', icon);
+            
+            // アイコンが見つからない場合は新しく作成
+            if (!icon) {
+                console.log('Creating new icon element');
+                const newIcon = document.createElement('i');
+                newIcon.setAttribute('data-feather', 'heart');
+                btn.insertBefore(newIcon, btn.firstChild);
+            }
+            
+            updateFavoriteButton(btn, isFavorited, favoriteCount);
+            btn.setAttribute('data-initialized', 'true');
+            
+            console.log('Button initialized successfully for shop:', shopId);
+        });
+        
+        console.log('Favorite buttons initialization completed');
+    }
 });
+
+// グローバル関数として定義
+function toggleFavorite(shopId) {
+    console.log('toggleFavorite called with shopId:', shopId);
+    
+    const favoriteBtn = document.querySelector(`.btn-favorite[data-shop-id="${shopId}"]`);
+    if (!favoriteBtn) {
+        console.error('Favorite button not found for shop:', shopId);
+        return;
+    }
+    
+    // リクエスト中の重複防止
+    if (favoriteBtn.disabled || favoriteBtn.dataset.requesting === 'true') {
+        console.log('Request already in progress, ignoring...');
+        return;
+    }
+    
+    // リクエスト開始状態に設定
+    favoriteBtn.disabled = true;
+    favoriteBtn.dataset.requesting = 'true';
+    favoriteBtn.style.opacity = '0.6';
+    
+    // アニメーション効果
+    favoriteBtn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        favoriteBtn.style.transform = 'scale(1)';
+    }, 150);
+    
+    // CSRFトークンの取得（複数の方法を試す）
+    let csrfToken = null;
+    
+    // 方法1: input要素から取得
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfInput) {
+        csrfToken = csrfInput.value;
+        console.log('CSRF token from input:', csrfToken);
+    }
+    
+    // 方法2: metaタグから取得（フォールバック）
+    if (!csrfToken) {
+        const csrfMeta = document.querySelector('meta[name=csrf-token]');
+        if (csrfMeta) {
+            csrfToken = csrfMeta.getAttribute('content');
+            console.log('CSRF token from meta:', csrfToken);
+        }
+    }
+    
+    // 方法3: Cookieから取得（フォールバック）
+    if (!csrfToken) {
+        // Django標準のCSRF Cookieの取得関数
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        csrfToken = getCookie('csrftoken');
+        if (csrfToken) {
+            console.log('CSRF token from cookie:', csrfToken);
+        }
+    }
+    
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        // リクエスト状態をリセット
+        favoriteBtn.disabled = false;
+        favoriteBtn.dataset.requesting = 'false';
+        favoriteBtn.style.opacity = '1';
+        alert('認証エラーが発生しました。ページを再読み込みしてください。');
+        return;
+    }
+    
+    console.log('CSRF token found:', csrfToken ? 'Yes' : 'No');
+    
+    const url = `${window.location.protocol}//${window.location.host}/shops/favorite/toggle/${shopId}/`;
+    console.log('Making request to:', url);
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            favoriteBtn.dataset.isFavorited = data.is_favorited;
+            favoriteBtn.dataset.favoriteCount = data.favorite_count;
+            updateFavoriteButton(favoriteBtn, data.is_favorited, data.favorite_count);
+            showToast(data.message);
+            console.log('Favorite updated successfully');
+        } else {
+            console.error('API Error:', data.message);
+            alert('エラー: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Network Error:', error);
+        alert('ネットワークエラーが発生しました。');
+    })
+    .finally(() => {
+        // リクエスト完了時に状態をリセット
+        favoriteBtn.disabled = false;
+        favoriteBtn.dataset.requesting = 'false';
+        favoriteBtn.style.opacity = '1';
+    });
+}
+
+function updateFavoriteButton(btn, isFavorited, favoriteCount) {
+    console.log('updateFavoriteButton called:', btn, isFavorited, favoriteCount);
+    
+    if (!btn) {
+        console.error('Button element is null or undefined');
+        return;
+    }
+    
+    // アイコン要素の取得（<i>と<svg>両方を試す）
+    let icon = btn.querySelector('i[data-feather="heart"]');
+    if (!icon) {
+        icon = btn.querySelector('svg');
+    }
+    
+    const textSpan = btn.querySelector('span');
+    
+    console.log('Icon element found:', icon);
+    console.log('Text span found:', textSpan);
+    
+    if (isFavorited) {
+        // お気に入り済み状態
+        btn.classList.add('favorited');
+        if (textSpan) {
+            textSpan.textContent = `お気に入り済み (${favoriteCount})`;
+        }
+        console.log('Set to favorited state');
+    } else {
+        // お気に入り未登録状態
+        btn.classList.remove('favorited');
+        if (textSpan) {
+            textSpan.textContent = `お気に入り (${favoriteCount})`;
+        }
+        console.log('Set to not favorited state');
+    }
+    
+    // データ属性も更新
+    btn.dataset.isFavorited = isFavorited;
+    btn.dataset.favoriteCount = favoriteCount;
+    
+    // 元のアイコン要素を確実に復元してからFeatherアイコンを再描画
+    if (icon && icon.tagName === 'SVG') {
+        // SVG要素の場合、元のi要素に戻す
+        const newIcon = document.createElement('i');
+        newIcon.setAttribute('data-feather', 'heart');
+        icon.parentNode.replaceChild(newIcon, icon);
+    } else if (!icon) {
+        // アイコン要素が見つからない場合、新しく作成
+        const newIcon = document.createElement('i');
+        newIcon.setAttribute('data-feather', 'heart');
+        btn.insertBefore(newIcon, btn.firstChild);
+    }
+    
+    // Featherアイコンを再描画（非同期処理として実行）
+    setTimeout(() => {
+        feather.replace();
+        console.log('Feather icons replaced');
+    }, 10);
+}
+
+function shareShop(shopId) {
+    const shopUrl = `${window.location.origin}/shops/shop_${shopId}/`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'おすすめのお店 - NAGOYAMESHI',
+            text: 'このお店をチェックしてみてください！',
+            url: shopUrl
+        });
+    } else {
+        navigator.clipboard.writeText(shopUrl);
+        alert('URLをコピーしました！');
+    }
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--primary);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
 </script>
+
+<style>
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* お気に入り済みスタイル */
+.btn-favorite.favorited {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    border-color: #dc2626;
+}
+
+.btn-favorite.favorited i {
+    fill: currentColor;
+}
+</style>
 {% endblock %}

@@ -130,3 +130,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+# CSRF設定
+CSRF_COOKIE_SECURE = False  # 開発環境ではFalse
+CSRF_COOKIE_HTTPONLY = False  # JavaScriptからアクセス可能にする
+CSRF_USE_SESSIONS = False  # Cookieを使用
+CSRF_COOKIE_SAMESITE = 'Lax'
