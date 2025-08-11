@@ -13,9 +13,12 @@
         {% if messages %}
             <div class="message-container">
                 {% for message in messages %}
-                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
-                        {{ message }}
-                    </div>
+                    {% comment %} ログイン/ログアウト関連のメッセージは新規登録画面では表示しない {% endcomment %}
+                    {% if "ログイン" not in message.message and "ログアウト" not in message.message %}
+                        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endif %}
                 {% endfor %}
             </div>
         {% endif %}

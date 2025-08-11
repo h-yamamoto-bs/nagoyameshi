@@ -23,6 +23,24 @@ class AccountListView(ListView):
 class LoginView(TemplateView):
     template_name = 'accounts/login.html'
 
+    def get(self, request, *args, **kwargs):
+        # ログイン/ログアウト関連のメッセージを削除
+        storage = messages.get_messages(request)
+        # メッセージを一時的に保存
+        filtered_messages = []
+        for message in storage:
+            if "ログイン" not in str(message) and "ログアウト" not in str(message):
+                filtered_messages.append(message)
+        
+        # 元のメッセージをクリア
+        storage.used = True
+        
+        # フィルタリングされたメッセージを再追加
+        for message in filtered_messages:
+            messages.add_message(request, message.level, message.message, message.tags)
+        
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = AuthenticationForm()
@@ -67,6 +85,24 @@ class LoginView(TemplateView):
 # 新規登録
 class RegisterView(TemplateView):
     template_name = 'accounts/register.html'
+
+    def get(self, request, *args, **kwargs):
+        # ログイン/ログアウト関連のメッセージを削除
+        storage = messages.get_messages(request)
+        # メッセージを一時的に保存
+        filtered_messages = []
+        for message in storage:
+            if "ログイン" not in str(message) and "ログアウト" not in str(message):
+                filtered_messages.append(message)
+        
+        # 元のメッセージをクリア
+        storage.used = True
+        
+        # フィルタリングされたメッセージを再追加
+        for message in filtered_messages:
+            messages.add_message(request, message.level, message.message, message.tags)
+        
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
 

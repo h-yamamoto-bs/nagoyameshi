@@ -62,7 +62,7 @@ class Favorite(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.shop.name}"
 
-class category(models.Model):
+class Category(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
     class Meta:
@@ -70,7 +70,7 @@ class category(models.Model):
 
 class ShopCategory(models.Model):
     shop = models.ForeignKey(Shop, related_name='categories', on_delete=models.CASCADE)
-    category = models.ForeignKey(category, related_name='shop_categories', on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, related_name='shop_categories', on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'shop_categories'

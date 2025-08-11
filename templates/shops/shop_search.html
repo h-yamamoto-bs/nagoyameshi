@@ -367,10 +367,18 @@
 /* 基本レイアウト */
 /* =================================== */
 .search-container {
-    max-width: 1200px;
+    max-width: 100% !important;
     margin: 0 auto;
-    padding: 1rem;
-    width: 100%;
+    padding: 1rem 2rem;
+    width: 100% !important;
+}
+
+/* 検索結果セクション */
+.search-results {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0;
+    padding: 0;
 }
 
 /* =================================== */
@@ -616,9 +624,11 @@
 /* =================================== */
 .shops-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
     margin-bottom: 3rem;
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 .shop-card {
