@@ -134,9 +134,9 @@
                                 <span>{% if shop_data.is_favorited %}お気に入り済み{% else %}お気に入り{% endif %} ({{ shop_data.favorite_count }})</span>
                             </button>
                             
-                            <button class="btn-share" 
-                                    data-shop-id="{{ shop_data.shop.pk }}"
-                                    onclick="event.preventDefault(); event.stopPropagation(); shareShop({{ shop_data.shop.pk }});">
+                <button class="btn-share" 
+                    data-shop-id="{{ shop_data.shop.pk }}"
+                    onclick="event.preventDefault(); event.stopPropagation(); shareShop(this.dataset.shopId);">
                                 <i data-feather="share-2"></i>
                                 <span>共有</span>
                             </button>

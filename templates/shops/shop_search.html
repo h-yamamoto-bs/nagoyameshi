@@ -231,7 +231,7 @@
                                     
                                     <button class="btn-share" 
                                             data-shop-id="{{ shop_data.shop.pk }}"
-                                            onclick="event.preventDefault(); event.stopPropagation(); shareShop({{ shop_data.shop.pk }});">
+                                            onclick="event.preventDefault(); event.stopPropagation(); shareShop(this.dataset.shopId);">
                                         <i data-feather="share-2"></i>
                                         <span>共有</span>
                                     </button>
@@ -1564,7 +1564,6 @@ function shareShop(shopId) {
 
 // さらに読み込み
 function loadMoreResults() {
-    // TODO: 追加の検索結果を読み込む
     console.log('さらに読み込み');
 }
 

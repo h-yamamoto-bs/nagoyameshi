@@ -178,6 +178,76 @@
                     </div>
                 </div>
 
+                <!-- 予約セクション（サブスク会員限定） -->
+                <div class="detail-card">
+                    <h3 class="card-title">
+                        <i data-feather="calendar"></i>
+                        予約
+                    </h3>
+                    {% if user.is_authenticated and can_reserve %}
+                        <form id="reservationForm" class="reservation-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="shop_id" value="{{ shop.pk }}">
+
+                            <div class="detail-grid">
+                                <div class="detail-row form-row">
+                                    <label class="detail-label form-label" for="reservationDate">
+                                        <i data-feather="calendar"></i>
+                                        日付
+                                    </label>
+                                    <div class="detail-value">
+                                        <input type="date" id="reservationDate" name="date" class="input" required>
+                                    </div>
+                                </div>
+
+                                <div class="detail-row form-row">
+                                    <label class="detail-label form-label" for="reservationTime">
+                                        <i data-feather="clock"></i>
+                                        時間
+                                    </label>
+                                    <div class="detail-value">
+                                        <select id="reservationTime" name="time" class="input">
+                                            <option value="11:00">11:00</option>
+                                            <option value="12:00">12:00</option>
+                                            <option value="13:00">13:00</option>
+                                            <option value="17:00">17:00</option>
+                                            <option value="18:00">18:00</option>
+                                            <option value="19:00">19:00</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="detail-row form-row">
+                                    <label class="detail-label form-label" for="reservationPeople">
+                                        <i data-feather="users"></i>
+                                        人数
+                                    </label>
+                                    <div class="detail-value">
+                                        <input type="number" id="reservationPeople" name="people" class="input" value="1" min="1" max="{{ shop.seat_count }}" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="reservation-actions" style="margin-top: 1rem; display:flex; gap:0.75rem;">
+                                <button type="submit" class="btn-submit">
+                                    <i data-feather="check"></i>
+                                    予約する
+                                </button>
+                                <div id="reservationStatus" class="reservation-status" aria-live="polite"></div>
+                            </div>
+                        </form>
+                    {% elif user.is_authenticated and not can_reserve %}
+                        <div class="login-required">
+                            <span>予約機能は有料会員限定です。</span>
+                            <a href="{% url 'accounts:mypage' %}?subscribe_required=1&next={{ request.path|urlencode }}">マイページで契約する</a>
+                        </div>
+                    {% else %}
+                        <p class="login-required">
+                            <a href="{% url 'accounts:login' %}">ログイン</a>して予約する
+                        </p>
+                    {% endif %}
+                </div>
+
                 <!-- レビューセクション（将来的な拡張） -->
                 <div class="detail-card">
                     <h3 class="card-title">
@@ -2155,4 +2225,95 @@ const CURRENT_PATH = PAGE_FLAGS.currentPath || window.location.pathname;
     transform: none;
 }
 </style>
+<script>
+// 予約フォーム送信（AJAX）
+document.addEventListener('DOMContentLoaded', function() {
+    const reservationForm = document.getElementById('reservationForm');
+    if (!reservationForm) return;
+
+    reservationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // CSRFトークン取得
+        let csrfToken = null;
+        const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfInput) csrfToken = csrfInput.value;
+        if (!csrfToken) {
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            csrfToken = getCookie('csrftoken');
+        }
+
+        if (!csrfToken) {
+            alert('CSRFトークンが見つかりません。ページを再読み込みしてください。');
+            return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.set('shop_id', reservationForm.querySelector('[name="shop_id"]').value);
+        formData.set('date', reservationForm.querySelector('[name="date"]').value);
+        formData.set('people', reservationForm.querySelector('[name="people"]').value);
+        const t = reservationForm.querySelector('[name="time"]');
+        if (t) formData.set('time', t.value);
+
+        const statusEl = document.getElementById('reservationStatus');
+        if (statusEl) {
+            statusEl.textContent = '送信中...';
+            statusEl.style.color = '#6b7280';
+        }
+
+        fetch('{% url "shops:create_reservation" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString()
+        })
+        .then(async (response) => {
+            const text = await response.text();
+            try { return JSON.parse(text); } catch { return { success: false, message: 'サーバー応答の解析に失敗しました。', raw: text }; }
+        })
+        .then((data) => {
+            if (data.redirect_url) {
+                window.location.href = data.redirect_url;
+                return;
+            }
+            if (data.success) {
+                showToast(data.message || '予約を受け付けました。');
+                if (statusEl) {
+                    const remains = typeof data.remaining_seats !== 'undefined' ? `（残り ${data.remaining_seats} 席）` : '';
+                    statusEl.textContent = `予約完了しました${remains}`;
+                    statusEl.style.color = '#16a34a';
+                }
+            } else {
+                if (statusEl) {
+                    statusEl.textContent = data.message || '予約に失敗しました。';
+                    statusEl.style.color = '#dc2626';
+                }
+            }
+        })
+        .catch((err) => {
+            console.error('Reservation error:', err);
+            if (statusEl) {
+                statusEl.textContent = 'ネットワークエラーが発生しました。';
+                statusEl.style.color = '#dc2626';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
