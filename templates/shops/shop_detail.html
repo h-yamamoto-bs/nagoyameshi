@@ -69,7 +69,6 @@
                             <div class="thumbnail-grid" id="thumbnailGrid">
                                 {% for image in shop.images.all %}
                                     <div class="thumbnail {% if forloop.first %}active{% endif %}" 
-                                         onclick="selectImage({{ forloop.counter0 }})"
                                          data-index="{{ forloop.counter0 }}">
                                         <img src="{{ image.image.url }}" alt="{{ shop.name }}">
                                     </div>
@@ -185,25 +184,59 @@
                         <i data-feather="message-square"></i>
                         レビュー
                     </h3>
-                    <div class="review-placeholder">
+                    <div class="review-section">
+                        <!-- 平均評価 -->
                         <div class="review-stats">
                             <div class="star-rating">
                                 <div class="stars">
-                                    <i data-feather="star" class="star filled"></i>
-                                    <i data-feather="star" class="star filled"></i>
-                                    <i data-feather="star" class="star filled"></i>
-                                    <i data-feather="star" class="star filled"></i>
-                                    <i data-feather="star" class="star"></i>
+                                    {% for i in "12345" %}
+                                        <i data-feather="star" class="star {% if forloop.counter <= avg_rating_int %}filled{% endif %}"></i>
+                                    {% endfor %}
                                 </div>
-                                <span class="rating-text">4.2 (レビュー機能準備中)</span>
+                                <span class="rating-text">{{ avg_rating }} / 5 ・ {{ review_count }}件</span>
                             </div>
                         </div>
+
+                        <!-- 最近のレビュー（最大3件） -->
+                        <div class="recent-reviews">
+                            {% if reviews %}
+                                <ul class="review-list">
+                                    {% for review in reviews|slice:":3" %}
+                                        <li class="review-item">
+                                            <div class="review-item-header">
+                                                <div class="review-item-stars">
+                                                    {% for i in "12345" %}
+                                                        <i data-feather="star" class="star {% if forloop.counter <= review.rating %}filled{% endif %}"></i>
+                                                    {% endfor %}
+                                                </div>
+                                                <div class="review-item-meta">
+                                                    <span class="review-user">{{ review.user.email }}</span>
+                                                    <span class="review-date">{{ review.created_at|date:"Y-m-d H:i" }}</span>
+                                                </div>
+                                            </div>
+                                            {% if review.comment %}
+                                                <p class="review-comment">{{ review.comment|linebreaksbr }}</p>
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="no-reviews">まだレビューはありません。</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- アクション -->
                         <div class="review-actions-group">
-                            {% if user.is_authenticated %}
+                            {% if user.is_authenticated and is_subscriber %}
                                 <button class="btn-review">
                                     <i data-feather="edit"></i>
                                     レビューを書く
                                 </button>
+                            {% elif user.is_authenticated and not is_subscriber %}
+                                <div class="login-required">
+                                    <span>レビュー投稿は有料会員限定です。</span>
+                                    <a href="{% url 'accounts:mypage' %}?subscribe_required=1&next={{ request.path|urlencode }}">マイページで契約する</a>
+                                </div>
                             {% else %}
                                 <p class="login-required">
                                     <a href="{% url 'accounts:login' %}">ログイン</a>してレビューを投稿
@@ -1416,21 +1449,30 @@
 }
 </style>
 
+<script id="shop-images-data" type="application/json">
+[
+{% for image in shop.images.all %}
+    {"url": "{{ image.image.url }}", "alt": "{{ shop.name }} - 画像{{ forloop.counter }}"}{% if not forloop.last %},{% endif %}
+{% endfor %}
+]
+</script>
+
 <script>
-// 画像データを格納
-const shopImages = [
-    {% for image in shop.images.all %}
-        {
-            url: "{{ image.image.url }}",
-            alt: "{{ shop.name }} - 画像{{ forloop.counter }}"
-        }{% if not forloop.last %},{% endif %}
-    {% endfor %}
-];
+// 画像データを格納（JSON script から安全に読み込み）
+let shopImages = [];
+try {
+        shopImages = JSON.parse(document.getElementById('shop-images-data')?.textContent || '[]');
+} catch(e) {
+        console.error('Failed to parse shop images json:', e);
+        shopImages = [];
+}
 
 let currentImageIndex = 0;
 
 // Feather Icons初期化
 feather.replace();
+
+// 有料会員フラグ: 後段のPAGE_FLAGSで定義されます
 
 // 画像ギャラリー機能
 function changeMainImage(direction) {
@@ -1537,28 +1579,26 @@ document.getElementById('lightbox').addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing favorite button...');
     
-    // お気に入りボタン（ログインユーザーのみ）
-    {% if user.is_authenticated %}
-        const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
-        console.log('Favorite button found:', favoriteBtn);
+    // お気に入りボタン
+    const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
+    console.log('Favorite button found:', favoriteBtn);
+    
+    if (favoriteBtn) {
+        const shopId = favoriteBtn.dataset.shopId;
+        console.log('Shop ID:', shopId);
         
-        if (favoriteBtn) {
-            const shopId = favoriteBtn.dataset.shopId;
-            console.log('Shop ID:', shopId);
-            
-            // 初期状態を設定（データ属性から取得）
-            const isFavorited = favoriteBtn.dataset.isFavorited === 'true';
-            const favoriteCount = parseInt(favoriteBtn.dataset.favoriteCount) || 0;
-            console.log('Initial state - isFavorited:', isFavorited, 'favoriteCount:', favoriteCount);
-            
-            updateFavoriteButton(isFavorited, favoriteCount);
-            
-            favoriteBtn.addEventListener('click', function() {
-                console.log('Favorite button clicked!');
-                toggleFavorite(shopId);
-            });
-        }
-    {% endif %}
+        // 初期状態を設定（データ属性から取得）
+        const isFavorited = favoriteBtn.dataset.isFavorited === 'true';
+        const favoriteCount = parseInt(favoriteBtn.dataset.favoriteCount) || 0;
+        console.log('Initial state - isFavorited:', isFavorited, 'favoriteCount:', favoriteCount);
+        
+        updateFavoriteButton(isFavorited, favoriteCount);
+        
+        favoriteBtn.addEventListener('click', function() {
+            console.log('Favorite button clicked!');
+            toggleFavorite(shopId);
+        });
+    }
     
     // 共有ボタン
     const shareBtn = document.querySelector('.btn-share');
@@ -1582,12 +1622,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const reviewBtn = document.querySelector('.btn-review');
     if (reviewBtn) {
         reviewBtn.addEventListener('click', function() {
+            if (!IS_SUBSCRIBER) {
+                // 念のためのガード（通常はボタン自体が表示されない）
+                window.location.href = MYPAGE_URL + '?subscribe_required=1&next=' + CURRENT_PATH;
+                return;
+            }
             openReviewModal();
         });
     }
 
     // レビューフォームの処理
     initializeReviewForm();
+
+    // サムネイルクリックでメイン画像を変更（inline onclickを廃止）
+    const thumbs = document.querySelectorAll('.thumbnail');
+    thumbs.forEach((thumb) => {
+        thumb.addEventListener('click', () => {
+            const idx = parseInt(thumb.getAttribute('data-index'));
+            if (!isNaN(idx)) {
+                selectImage(idx);
+            }
+        });
+    });
 });
 
 // =================================== //
@@ -1732,6 +1788,7 @@ function handleReviewSubmit(e) {
         headers: {
             'X-CSRFToken': csrfToken,
             'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
         },
         body: new URLSearchParams({
             'shop_id': shopId,
@@ -1739,8 +1796,12 @@ function handleReviewSubmit(e) {
             'comment': comment
         })
     })
-    .then(response => response.json())
+    .then(response => response.text().then(text => { try { return JSON.parse(text); } catch { return { success: false, message: 'サーバー応答の解析に失敗しました', raw: text }; } }))
     .then(data => {
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+            return;
+        }
         if (data.success) {
             alert(`レビューが投稿されました！\n評価: ${rating}つ星\nコメント: ${comment || '(コメントなし)'}`);
             closeReviewModal();
@@ -1780,11 +1841,11 @@ function toggleFavorite(shopId) {
     }
     
     // ログイン状態の確認
-    {% if not user.is_authenticated %}
+    if (!IS_AUTHENTICATED) {
         alert('お気に入り機能を使用するにはログインが必要です。');
-        window.location.href = '{% url "accounts:login" %}';
+        window.location.href = LOGIN_URL;
         return;
-    {% endif %}
+    }
     
     const favoriteBtn = document.querySelector('.btn-favorite:not(.btn-login-required)');
     if (!favoriteBtn) {
@@ -1870,6 +1931,7 @@ function toggleFavorite(shopId) {
         headers: {
             'X-CSRFToken': csrfToken,
             'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
         }
     })
     .then(response => {
@@ -1880,7 +1942,7 @@ function toggleFavorite(shopId) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        // レスポンスの内容をテキストとして取得してログ出力
+        // レスポンスの内容をテキストとして取得してログ出力し、堅牢にJSON化
         return response.text().then(text => {
             console.log('Raw response text:', text);
             try {
@@ -1888,12 +1950,16 @@ function toggleFavorite(shopId) {
             } catch (parseError) {
                 console.error('JSON parse error:', parseError);
                 console.error('Response text that failed to parse:', text);
-                throw new Error('サーバーからの応答をJSONとして解析できませんでした。');
+                return { success: false, message: 'サーバーからの応答をJSONとして解析できませんでした。', raw: text };
             }
         });
     })
     .then(data => {
         console.log('Response data:', data);
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+            return;
+        }
         if (data.success) {
             updateFavoriteButton(data.is_favorited, data.favorite_count);
             // 小さなフィードバック表示
@@ -1994,6 +2060,33 @@ function showToast(message) {
         }, 300);
     }, 3000);
 }
+// ページ状態フラグ（JSON）
+</script>
+<script id="page-flags" type="application/json">
+{
+  "isSubscriber": "{{ is_subscriber|yesno:'true,false' }}",
+  "isAuthenticated": "{{ user.is_authenticated|yesno:'true,false' }}",
+  "loginUrl": "{% url 'accounts:login' %}",
+  "mypageUrl": "{% url 'accounts:mypage' %}",
+  "currentPath": "{{ request.path|urlencode }}"
+}
+</script>
+<script>
+// ページフラグ読み込み
+let PAGE_FLAGS = {};
+try {
+    PAGE_FLAGS = JSON.parse(document.getElementById('page-flags')?.textContent || '{}');
+} catch(e) {
+    console.error('Failed to parse page flags json:', e);
+    PAGE_FLAGS = {};
+}
+
+// フラグ・URLの定義
+const IS_SUBSCRIBER = String(PAGE_FLAGS.isSubscriber) === 'true';
+const IS_AUTHENTICATED = String(PAGE_FLAGS.isAuthenticated) === 'true';
+const LOGIN_URL = PAGE_FLAGS.loginUrl || '/accounts/login/';
+const MYPAGE_URL = PAGE_FLAGS.mypageUrl || '/accounts/mypage/';
+const CURRENT_PATH = PAGE_FLAGS.currentPath || window.location.pathname;
 </script>
 
 <style>

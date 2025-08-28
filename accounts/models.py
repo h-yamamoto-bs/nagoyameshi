@@ -50,6 +50,10 @@ class Subscription(models.Model):
     start_date = models.DateField(auto_now_add=True)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    stripe_id = models.CharField(max_length=255, null=True, blank=True)
+    # 追加: Stripe連携に必要なID
+    stripe_customer_id = models.CharField(max_length=255, null=True, blank=True)
+    stripe_subscription_id = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         db_table = 'subscriptions'

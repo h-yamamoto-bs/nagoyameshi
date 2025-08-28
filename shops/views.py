@@ -1,5 +1,5 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Shop, Review, Favorite
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Shop, Review, Favorite, Category, ShopCategory, History
 from django.views.generic import ListView, DetailView
 from django.db.models import Q, Avg
 from django.http import JsonResponse
@@ -8,6 +8,11 @@ from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.middleware.csrf import get_token
+from datetime import datetime
+from django.db import transaction
+from django.contrib import messages
+from accounts.decorators import subscription_required
+from accounts.models import Subscription
 
 class ShopListView(ListView):
     model = Shop
@@ -23,13 +28,17 @@ class ShopListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # 各店舗のお気に入り情報を追加
+        # 各店舗のお気に入り情報とカテゴリー情報を追加
+        shops = context['shops']
+        shops_list = list(shops)  # QuerySetをリストに変換
         shops_with_favorites = []
-        for shop in context['shops']:
+        
+        for shop in shops_list:  # リストを使用
             shop_data = {
                 'shop': shop,
                 'is_favorited': False,
-                'favorite_count': shop.favorites.count()
+                'favorite_count': shop.favorites.count(),
+                'categories': shop.categories.select_related('category')
             }
             
             if self.request.user.is_authenticated:
@@ -70,6 +79,38 @@ class ShopDetailView(DetailView):
         # お気に入り数を追加
         context['favorite_count'] = shop.favorites.count()
         
+        # 店舗のカテゴリー情報を追加
+        context['shop_categories'] = shop.categories.select_related('category')
+        
+        # レビュー関連の情報を追加
+        reviews = shop.reviews.select_related('user').order_by('-created_at')
+        context['reviews'] = reviews
+        context['review_count'] = reviews.count()
+        
+        # 平均評価を計算
+        avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
+        context['avg_rating'] = round(avg_rating, 1) if avg_rating else 0
+        context['avg_rating_int'] = int(avg_rating) if avg_rating else 0
+        
+        # ログイン済みユーザーの既存レビューをチェック
+        if self.request.user.is_authenticated:
+            context['user_review'] = shop.reviews.select_related('user').filter(user=self.request.user).first()
+        else:
+            context['user_review'] = None
+
+        # サブスクリプション状態（予約フォームの表示制御に使用）
+        can_reserve = False
+        if self.request.user.is_authenticated:
+            try:
+                sub = self.request.user.subscription
+                has_valid_stripe = bool(getattr(sub, 'stripe_subscription_id', None))
+                can_reserve = bool(getattr(sub, 'is_active', False) and has_valid_stripe)
+            except Subscription.DoesNotExist:
+                can_reserve = False
+        context['can_reserve'] = can_reserve
+        # レビュー編集/投稿など他のプレミアム機能の制御にも使えるフラグ
+        context['is_subscriber'] = can_reserve
+
         return context
 
 class ShopSearchView(ListView):
@@ -84,43 +125,59 @@ class ShopSearchView(ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-
         # GETパラメーターから検索キーワードqを取得
-        query = self.request.GET.get('q').strip()
+        query = self.request.GET.get('q')
+        category_id = self.request.GET.get('category')
 
-        # 検索キーワードがからの場合
-        if not query:
-            return Shop.objects.none()
+        # 検索条件の準備
+        queryset = Shop.objects.prefetch_related('images', 'categories__category')
+
+        # カテゴリー検索の場合
+        if category_id:
+            queryset = queryset.filter(categories__category_id=category_id).distinct()
         
-        # 検索
-        # Qオブジェクトを使用して、name, address, phone_numberのいずれかにキーワードが含まれるShopを検索
-        # また、prefetch_relatedを使用してimagesを事前に取得
-        return Shop.objects.filter(
-            Q(name__icontains=query) |
-            Q(address__icontains=query) |
-            Q(phone_number__icontains=query)
-        ).prefetch_related('images').distinct()
+        # キーワード検索の場合
+        elif query and query.strip():
+            query = query.strip()
+            queryset = queryset.filter(
+                Q(name__icontains=query) |
+                Q(address__icontains=query) |
+                Q(phone_number__icontains=query) |
+                Q(categories__category__name__icontains=query)  # カテゴリー名でも検索
+            ).distinct()
+        else:
+            # 検索条件がない場合は全店舗を表示
+            queryset = queryset.all()
+        
+        return queryset
 
     def get_context_data(self, **kwargs):
-
         # 親クラスのコンテキストを取得
         context = super().get_context_data(**kwargs)
-        # print(**kwargs.get('shop_pk'))
 
-        # 検索キーワードをコンテキストに追加
-        # テンプレートで検索ボックスに前回の検索語を
+        # 検索キーワードとカテゴリーをコンテキストに追加
         query = self.request.GET.get('q', '')
+        category_id = self.request.GET.get('category', '')
         context['query'] = query
+        context['selected_category'] = category_id
+
+        # 検索されたカテゴリー情報を追加
+        if category_id:
+            try:
+                context['category_name'] = Category.objects.get(id=category_id).name
+            except Category.DoesNotExist:
+                context['category_name'] = ''
 
         # 検索結果の総件数を追加
-        # ページネーション情報とは別に総件数を表示するため
-        context['result_count'] = self.get_queryset().count()
+        result_count = self.get_queryset().count()
+        context['result_count'] = result_count
 
-        # お気に入り情報を含む店舗データを準備
+        # お気に入り情報とカテゴリー情報を含む店舗データを準備
         shops = context['shops']
+        shops_list = list(shops)  # QuerySetをリストに変換
         shops_with_favorites = []
         
-        for shop in shops:
+        for shop in shops_list:  # リストを使用
             is_favorited = False
             favorite_count = shop.favorites.count()
             
@@ -131,6 +188,7 @@ class ShopSearchView(ListView):
                 'shop': shop,
                 'is_favorited': is_favorited,
                 'favorite_count': favorite_count,
+                'categories': shop.categories.select_related('category')
             })
         
         context['shops_with_favorites'] = shops_with_favorites
@@ -187,6 +245,7 @@ class ReviewListView(ListView):
 
 
 @login_required
+@subscription_required
 @require_POST
 def submit_review(request):
     try:
@@ -256,6 +315,7 @@ def submit_review(request):
 # =================================== #
 
 @login_required
+@subscription_required
 @require_POST
 def toggle_favorite(request, shop_id):
     """お気に入りの追加・削除を切り替える"""
@@ -390,3 +450,74 @@ def load_more_shops(request):
             'success': False,
             'message': 'データの読み込みに失敗しました。'
         }, status=500)
+
+@login_required
+@subscription_required
+@require_POST
+def create_reservation(request):
+    """予約作成: フォーム送信/ AJAX 両対応。残席不足ならエラー、成功で履歴作成。"""
+    def is_ajax(req):
+        return req.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    try:
+        shop_id = request.POST.get('shop_id')
+        date_str = request.POST.get('date')  # 例: '2025-08-30'
+        people_str = request.POST.get('people')
+
+        # 入力チェック
+        if not (shop_id and date_str and people_str):
+            if is_ajax(request):
+                return JsonResponse({'success': False, 'message': '必要な情報が不足しています。'}, status=400)
+            messages.error(request, '必要な情報が不足しています。')
+            return redirect('shops:shop_detail', pk=shop_id or 0)
+
+        shop = get_object_or_404(Shop, pk=shop_id)
+
+        # 型変換
+        try:
+            reserve_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            if is_ajax(request):
+                return JsonResponse({'success': False, 'message': '日付の形式が正しくありません。YYYY-MM-DDで指定してください。'}, status=400)
+            messages.error(request, '日付の形式が正しくありません。YYYY-MM-DDで指定してください。')
+            return redirect('shops:shop_detail', pk=shop.id)
+
+        try:
+            people = int(people_str)
+            if people <= 0:
+                raise ValueError
+        except ValueError:
+            if is_ajax(request):
+                return JsonResponse({'success': False, 'message': '人数は1以上の整数で入力してください。'}, status=400)
+            messages.error(request, '人数は1以上の整数で入力してください。')
+            return redirect('shops:shop_detail', pk=shop.id)
+
+        # 残席チェックと作成をトランザクションで
+        with transaction.atomic():
+            remaining = shop.remaining_seats_on(reserve_date)
+            if people > remaining:
+                if is_ajax(request):
+                    return JsonResponse({'success': False, 'message': f'指定日の残席が不足しています。（残り {remaining} 席）'}, status=400)
+                messages.error(request, f'指定日の残席が不足しています。（残り {remaining} 席）')
+                return redirect('shops:shop_detail', pk=shop.id)
+
+            # 予約をHistoryに保存（履歴として管理）
+            History.objects.create(
+                shop=shop,
+                user=request.user,
+                date=reserve_date,
+                number_of_people=people,
+            )
+
+        if is_ajax(request):
+            new_remaining = shop.remaining_seats_on(reserve_date)
+            return JsonResponse({'success': True, 'message': '予約を受け付けました。', 'remaining_seats': new_remaining})
+
+        messages.success(request, '予約を受け付けました。')
+        return redirect('shops:shop_detail', pk=shop.id)
+
+    except Exception:
+        if is_ajax(request):
+            return JsonResponse({'success': False, 'message': 'サーバーエラーが発生しました。'}, status=500)
+        messages.error(request, 'サーバーエラーが発生しました。')
+        return redirect('shops:shop_list')

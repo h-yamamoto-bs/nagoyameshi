@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% block flash_messages %}{% endblock %}
+
 {% block content %}
 <div class="register-container">
     <div class="register-card">
@@ -13,9 +15,11 @@
         {% if messages %}
             <div class="message-container">
                 {% for message in messages %}
-                    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
-                        {{ message }}
-                    </div>
+                    {% if "auth" in message.tags %}
+                        <div class="alert alert-{% if 'error' in message.tags %}danger{% else %}{{ message.tags }}{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endif %}
                 {% endfor %}
             </div>
         {% endif %}

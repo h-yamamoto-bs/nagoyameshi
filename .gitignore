@@ -5,3 +5,6 @@ db.sqlite3
 *.log
 .DS_Store
 *.env
+seacrets/
+*.env.*
+requirements.txt

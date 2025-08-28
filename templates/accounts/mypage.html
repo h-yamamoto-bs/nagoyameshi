@@ -154,59 +154,99 @@
                         <i data-feather="credit-card"></i>
                         サブスクリプション
                     </h3>
-                    <button class="btn-edit" onclick="openSubscriptionModal()">
-                        <i data-feather="edit-2"></i>
-                        編集
-                    </button>
+                    {# 契約状況に応じて出し分け: 顧客IDが保存されている=編集可能 #}
+                    {% if subscription and subscription.stripe_customer_id %}
+                        <a class="btn-edit" href="{% url 'accounts:subscription_portal' %}">
+                            <i data-feather="settings"></i>
+                            編集（Stripe）
+                        </a>
+                    {% else %}
+                        <a class="btn-subscribe" href="{% url 'accounts:pay_with_stripe' %}">
+                            <i data-feather="star"></i>
+                            プレミアム会員になる
+                        </a>
+                    {% endif %}
                 </div>
+
                 <div class="info-grid">
+                    <!-- ステータス（Subscriptionの有無で判定） -->
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i data-feather="toggle-right"></i>
+                            <span>ステータス</span>
+                        </div>
+                        <div class="info-value">
+                            {% if subscription %}
+                                <span class="status-active">
+                                    <i data-feather="check-circle"></i>
+                                    有効
+                                </span>
+                            {% else %}
+                                <span class="status-inactive">
+                                    <i data-feather="x-circle"></i>
+                                    無効
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 開始日（Subscriptionがある場合のみ表示） -->
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i data-feather="calendar"></i>
+                            <span>開始日</span>
+                        </div>
+                        <div class="info-value">
+                            {% if subscription %}
+                                {{ subscription.start_date|date:"Y年n月j日" }}
+                            {% else %}
+                                <span class="text-muted">未契約</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if subscription and subscription.end_date %}
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i data-feather="calendar-x"></i>
+                                <span>終了日</span>
+                            </div>
+                            <div class="info-value">{{ subscription.end_date|date:"Y年n月j日" }}</div>
+                        </div>
+                    {% endif %}
+
                     {% if subscription %}
                         <div class="info-row">
                             <div class="info-label">
-                                <i data-feather="toggle-right"></i>
-                                <span>ステータス</span>
+                                <i data-feather="dollar-sign"></i>
+                                <span>プラン</span>
                             </div>
-                            <div class="info-value">
-                                {% if subscription.is_active %}
-                                    <span class="status-active">
-                                        <i data-feather="check-circle"></i>
-                                        有効
-                                    </span>
-                                {% else %}
-                                    <span class="status-inactive">
-                                        <i data-feather="x-circle"></i>
-                                        無効
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="info-row">
-                            <div class="info-label">
-                                <i data-feather="calendar"></i>
-                                <span>開始日</span>
-                            </div>
-                            <div class="info-value">{{ subscription.start_date|date:"Y年n月j日" }}</div>
-                        </div>
-                        
-                        {% if subscription.end_date %}
-                            <div class="info-row">
-                                <div class="info-label">
-                                    <i data-feather="calendar-x"></i>
-                                    <span>終了日</span>
-                                </div>
-                                <div class="info-value">{{ subscription.end_date|date:"Y年n月j日" }}</div>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="no-subscription">
-                            <div class="no-subscription-icon">
-                                <i data-feather="credit-card"></i>
-                            </div>
-                            <p class="no-subscription-text">サブスクリプション情報がありません</p>
+                            <div class="info-value">プレミアム会員 - ¥300/月</div>
                         </div>
                     {% endif %}
                 </div>
+
+                {% if not subscription %}
+                <div class="subscription-promotion">
+                    <div class="promotion-content">
+                        <div class="promotion-icon">
+                            <i data-feather="star"></i>
+                        </div>
+                        <div class="promotion-text">
+                            <h4>プレミアム会員の特典</h4>
+                            <ul class="benefits-list">
+                                <li><i data-feather="check"></i>レビュー投稿機能の解放</li>
+                                <li><i data-feather="check"></i>予約機能の開放</li>
+                                <li><i data-feather="check"></i>お気に入り機能の解放</li>
+                            </ul>
+                            <div class="price-info">
+                                <span class="price">月額 ¥300</span>
+                                <span class="price-note">（税込）</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- お気に入り一覧 -->
@@ -758,6 +798,130 @@
 .btn-edit i {
     width: 1rem;
     height: 1rem;
+}
+
+/* サブスクリプション契約ボタン */
+.btn-subscribe {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.875rem;
+}
+
+.btn-subscribe:hover {
+    background: linear-gradient(135deg, var(--primary-dark), #4c1d95);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.btn-subscribe:disabled {
+    background: var(--gray-300);
+    color: var(--gray-500);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-subscribe i {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* プレミアム会員特典表示 */
+.subscription-promotion {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-radius: 1rem;
+    border: 1px solid var(--gray-200);
+}
+
+.promotion-content {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.promotion-icon {
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.promotion-icon i {
+    width: 2rem;
+    height: 2rem;
+}
+
+.promotion-text {
+    flex: 1;
+}
+
+.promotion-text h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0 0 1rem 0;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+}
+
+.benefits-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+.benefits-list li:last-child {
+    margin-bottom: 0;
+}
+
+.benefits-list i {
+    width: 1rem;
+    height: 1rem;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.price-info {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid var(--gray-200);
+}
+
+.price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.price-note {
+    font-size: 0.875rem;
+    color: var(--gray-600);
 }
 
 .info-grid {
@@ -1613,6 +1777,95 @@ function handleSubscriptionSubmit(e) {
 }
 
 // =================================== //
+// Stripeサブスクリプション契約機能
+// =================================== //
+
+async function startSubscription() {
+    console.log('startSubscription function called');
+    
+    try {
+        // 確認ダイアログ
+        if (!confirm('プレミアム会員（月額¥300）に登録しますか？')) {
+            console.log('User cancelled subscription');
+            return;
+        }
+        
+        console.log('User confirmed subscription');
+        
+        // ボタンを無効化
+        const subscribeBtn = document.querySelector('.btn-subscribe');
+        console.log('Subscribe button found:', subscribeBtn);
+        
+        if (!subscribeBtn) {
+            console.error('Subscribe button not found');
+            alert('サブスクリプションボタンが見つかりません');
+            return;
+        }
+        
+        const originalText = subscribeBtn.innerHTML;
+        subscribeBtn.disabled = true;
+        subscribeBtn.innerHTML = '<i data-feather="loader"></i>処理中...';
+        feather.replace();
+        
+        // CSRFトークンの取得
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        console.log('CSRF token found:', csrfToken ? 'Yes' : 'No');
+        
+        if (!csrfToken) {
+            throw new Error('CSRFトークンが見つかりません');
+        }
+        
+        const url = '{% url "accounts:pay_with_stripe" %}';
+        console.log('Sending request to:', url);
+        
+        // Stripeチェックアウトセッションを作成
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response error text:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, text: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+            // Stripeの決済ページにリダイレクト
+            console.log('Redirecting to:', data.checkout_url);
+            window.location.href = data.checkout_url;
+        } else {
+            alert('エラー: ' + data.error);
+            // ボタンを元に戻す
+            subscribeBtn.disabled = false;
+            subscribeBtn.innerHTML = originalText;
+            feather.replace();
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('ネットワークエラーが発生しました: ' + error.message);
+        
+        // ボタンを元に戻す
+        const subscribeBtn = document.querySelector('.btn-subscribe');
+        if (subscribeBtn) {
+            subscribeBtn.disabled = false;
+            subscribeBtn.innerHTML = '<i data-feather="star"></i>プレミアム会員になる';
+            feather.replace();
+        }
+    }
+}
+
+// =================================== //
 // お気に入り削除機能
 // =================================== //
 
@@ -1628,17 +1881,21 @@ function removeFavorite(shopId) {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/x-www-form-urlencoded',
         }
     })
-    .then(response => response.json())
+    .then(async (response) => {
+        const text = await response.text();
+        try { return JSON.parse(text); } catch { return { success: false, message: 'サーバー応答の解析に失敗しました。', raw: text }; }
+    })
     .then(data => {
         if (data.success) {
             alert(data.message);
-            // ページをリロードして最新の情報を表示
             window.location.reload();
         } else {
-            alert('エラー: ' + data.message);
+            alert(data.message || 'この操作は会員限定です。マイページで契約をご検討ください。');
+            if (data.redirect_url) window.location.href = data.redirect_url;
         }
     })
     .catch(error => {

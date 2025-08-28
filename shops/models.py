@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import User
 from django.utils import timezone
+from django.db.models import Sum
 
 # Create your models here.
 class Shop(models.Model):
@@ -15,6 +16,12 @@ class Shop(models.Model):
 
     def __str__(self):
         return f"{self.name}（{self.address}）"
+
+    # 追加: 指定日の残席数を計算
+    def remaining_seats_on(self, on_date):
+        booked = self.histories.filter(date=on_date).aggregate(total=Sum('number_of_people'))['total'] or 0
+        remaining = self.seat_count - booked
+        return remaining if remaining > 0 else 0
 
 class Image(models.Model):
     shop = models.ForeignKey(Shop, related_name='images', on_delete=models.CASCADE)

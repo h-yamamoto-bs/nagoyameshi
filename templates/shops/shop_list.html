@@ -38,33 +38,33 @@
     <div class="shops-grid">
         {% for shop_data in shops_with_favorites %}
             {% with shop=shop_data.shop %}
-            <div class="shop-card" data-shop-id="{{ shop.pk }}">
-                <a href="{% url 'shops:shop_detail' shop.pk %}" class="shop-link">
+            <div class="shop-card" data-shop-id="{{ shop_data.shop.pk }}">
+                <a href="{% url 'shops:shop_detail' shop_data.shop.pk %}" class="shop-link">
                     <!-- =================================== -->
                     <!-- 画像ギャラリー -->
                     <!-- =================================== -->
                     <div class="shop-gallery">
-                        {% if shop.images.exists %}
+                                                    {% if shop_data.shop.images.exists %}
                             <div class="image-main">
-                                <img src="{{ shop.images.first.image.url }}" 
-                                     alt="{{ shop.name }}"
+                                <img src="{{ shop_data.shop.images.first.image.url }}" 
+                                     alt="{{ shop_data.shop.name }}"
                                      class="main-image">
                                 <div class="image-overlay">
                                     <i data-feather="zoom-in"></i>
                                 </div>
                             </div>
                             
-                            {% if shop.images.count > 1 %}
+                                                            {% if shop_data.shop.images.count > 1 %}
                                 <div class="image-thumbnails">
-                                    {% for image in shop.images.all|slice:"1:4" %}
+                                                                            {% for image in shop_data.shop.images.all|slice:"1:5" %}
                                         <div class="thumbnail">
-                                            <img src="{{ image.image.url }}" alt="{{ shop.name }}">
+                                            <img src="{{ image.image.url }}" alt="{{ shop_data.shop.name }}">
                                         </div>
                                     {% endfor %}
                                     
-                                    {% if shop.images.count > 4 %}
+                                                                            {% if shop_data.shop.images.count > 4 %}
                                         <div class="thumbnail more-photos">
-                                            <span>+{{ shop.images.count|add:"-4" }}</span>
+                                            <span>+{{ shop_data.shop.images.count|add:"-4" }}</span>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -80,7 +80,7 @@
                         {% if shop.images.count > 0 %}
                             <div class="image-count-badge">
                                 <i data-feather="camera"></i>
-                                <span>{{ shop.images.count }}</span>
+                                <span>{{ shop_data.shop.images.count }}</span>
                             </div>
                         {% endif %}
                     </div>
@@ -90,27 +90,35 @@
                     <!-- =================================== -->
                     <div class="shop-content">
                         <div class="shop-header">
-                            <h2 class="shop-name">{{ shop.name }}</h2>
-                            <div class="shop-badge">
-                                <i data-feather="award"></i>
-                                <span>おすすめ</span>
-                            </div>
+                            <h2 class="shop-name">{{ shop_data.shop.name }}</h2>
+                            
+                            <!-- カテゴリー表示 -->
+                            {% if shop_data.categories %}
+                                <div class="shop-categories">
+                                    {% for shop_category in shop_data.categories %}
+                                        <a href="{% url 'shops:search' %}?category={{ shop_category.category.id }}" 
+                                           class="category-tag">
+                                            {{ shop_category.category.name }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="shop-details">
                             <div class="detail-item">
                                 <i data-feather="map-pin"></i>
-                                <span>{{ shop.address }}</span>
+                                <span>{{ shop_data.shop.address }}</span>
                             </div>
                             
                             <div class="detail-item">
                                 <i data-feather="phone"></i>
-                                <span>{{ shop.phone_number|default:"お問い合わせ時間をご確認ください" }}</span>
+                                <span>{{ shop_data.shop.phone_number|default:"お問い合わせ時間をご確認ください" }}</span>
                             </div>
                             
                             <div class="detail-item">
                                 <i data-feather="users"></i>
-                                <span>{{ shop.seat_count }}席</span>
+                                <span>{{ shop_data.shop.seat_count }}席</span>
                             </div>
                         </div>
 
@@ -119,7 +127,7 @@
                         <!-- =================================== -->
                         <div class="shop-actions">
                             <button class="btn-favorite {% if shop_data.is_favorited %}favorited{% endif %}" 
-                                    data-shop-id="{{ shop.pk }}"
+                                    data-shop-id="{{ shop_data.shop.pk }}"
                                     data-is-favorited="{{ shop_data.is_favorited|yesno:'true,false' }}"
                                     data-favorite-count="{{ shop_data.favorite_count }}">
                                 <i data-feather="heart"></i>
@@ -127,8 +135,8 @@
                             </button>
                             
                             <button class="btn-share" 
-                                    data-shop-id="{{ shop.pk }}"
-                                    onclick="event.preventDefault(); event.stopPropagation(); shareShop({{ shop.pk }});">
+                                    data-shop-id="{{ shop_data.shop.pk }}"
+                                    onclick="event.preventDefault(); event.stopPropagation(); shareShop({{ shop_data.shop.pk }});">
                                 <i data-feather="share-2"></i>
                                 <span>共有</span>
                             </button>
@@ -438,22 +446,34 @@
     flex: 1;
 }
 
-.shop-badge {
+/* カテゴリータグ */
+.shop-categories {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: 0.375rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
+    margin: 0.5rem 0;
 }
 
-.shop-badge i {
-    width: 0.875rem;
-    height: 0.875rem;
+.category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--gray-200);
+}
+
+.category-tag:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-1px);
 }
 
 .shop-details {
@@ -841,10 +861,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="shop-content">
                     <div class="shop-header">
                         <h2 class="shop-name">${shop.name}</h2>
-                        <div class="shop-badge">
-                            <i data-feather="award"></i>
-                            <span>おすすめ</span>
-                        </div>
                     </div>
                     <div class="shop-details">
                         <div class="detail-item">
@@ -1006,12 +1022,13 @@ function toggleFavorite(shopId) {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/x-www-form-urlencoded',
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
+    .then(async (response) => {
+        const text = await response.text();
+        try { return JSON.parse(text); } catch { return { success: false, message: 'サーバー応答の解析に失敗しました。', raw: text }; }
     })
     .then(data => {
         console.log('Response data:', data);
@@ -1020,10 +1037,9 @@ function toggleFavorite(shopId) {
             favoriteBtn.dataset.favoriteCount = data.favorite_count;
             updateFavoriteButton(favoriteBtn, data.is_favorited, data.favorite_count);
             showToast(data.message);
-            console.log('Favorite updated successfully');
         } else {
-            console.error('API Error:', data.message);
-            alert('エラー: ' + data.message);
+            alert(data.message || 'この操作は会員限定です。マイページで契約をご検討ください。');
+            if (data.redirect_url) window.location.href = data.redirect_url;
         }
     })
     .catch(error => {

@@ -14,4 +14,6 @@ urlpatterns = [
     path('favorite/toggle/<int:shop_id>/', views.toggle_favorite, name='toggle_favorite'),
     # 追加読み込み機能
     path('api/load-more-shops/', views.load_more_shops, name='load_more_shops'),
+    # 予約作成
+    path('reserve/', views.create_reservation, name='create_reservation'),
 ]

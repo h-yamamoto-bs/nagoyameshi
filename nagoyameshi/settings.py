@@ -12,16 +12,31 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+root = environ.Path(BASE_DIR / 'secrets')
+ 
+# 本番環境用
+# env.read_env(root('.env.prod'))
+ 
+# 開発環境用
+env.read_env(root('.env.dev'))
+ 
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
+ 
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = env.str('SECRET_KEY')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#celjmvx-pw&pom*x*sbo-wa^$ed%985#aru*&jlrkuo^tac4o'
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -136,3 +151,12 @@ CSRF_COOKIE_SECURE = False  # 開発環境ではFalse
 CSRF_COOKIE_HTTPONLY = False  # JavaScriptからアクセス可能にする
 CSRF_USE_SESSIONS = False  # Cookieを使用
 CSRF_COOKIE_SAMESITE = 'Lax'
+
+# stripe api key
+STRIPE_API_SECRET_KEY = env.str('STRIPE_API_SECRET_KEY')
+
+# スキーマ&ドメイン
+MY_URL = env.str('MY_URL')
+
+# Stripeの価格ID
+STRIPE_PRICE_ID = env.str('STRIPE_PRICE_ID')

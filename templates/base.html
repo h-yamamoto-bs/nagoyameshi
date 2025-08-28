@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Feather Icons for clean icons -->
     <script src="https://unpkg.com/feather-icons"></script>
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <!-- =================================== -->
@@ -90,7 +91,6 @@
                 {% else %}
                     <!-- 未ログインユーザー -->
                     <div class="auth-menu">
-                        <p class="welcome-text">NAGOYAMESHIへようこそ</p>
                         <div class="auth-buttons">
                             <a href="{% url 'accounts:login' %}" class="btn btn-outline">
                                 <i data-feather="log-in"></i>
@@ -124,10 +124,28 @@
     </div>
 
     <!-- =================================== -->
-    <!-- メインコンテンツ -->
+    <!-- フラッシュメッセージ（上書き可能） -->
+    <!-- 子テンプレートで block flash_messages を空にすると非表示 -->
     <!-- =================================== -->
-    <main class="main-content">
-        {% block content %}{% endblock %}
+    {% block flash_messages %}
+      {% if messages %}
+        <div class="messages" style="max-width: 960px; margin: 16px auto;">
+          {% for message in messages %}
+            <div class="alert {{ message.tags }}" role="alert" style="padding:12px 16px; border-radius:8px; margin-bottom:8px; background:#f8f9fa; border:1px solid #e9ecef;">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endblock %}
+
+    <!-- =================================== -->
+    <!-- メインコンテンツ挿入位置 -->
+    <!-- 各テンプレートが block content もしくは block main を使えるよう両方用意 -->
+    <!-- =================================== -->
+    <main>
+      {% block content %}{% endblock %}
+      {% block main %}{% endblock %}
     </main>
 
     <!-- =================================== -->
@@ -742,6 +760,8 @@
         animation: fadeInUp 0.6s ease-out;
     }
     </style>
+
+    {% block extra_scripts %}{% endblock %}
 
     <script>
         // Feather Iconsの初期化

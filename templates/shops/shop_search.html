@@ -61,6 +61,9 @@
             {% if query %}
                 <h1 class="search-title">「{{ query }}」の検索結果</h1>
                 <p class="search-subtitle">{{ result_count }}件のお店が見つかりました</p>
+            {% elif category_name %}
+                <h1 class="search-title">カテゴリー「{{ category_name }}」の検索結果</h1>
+                <p class="search-subtitle">{{ result_count }}件のお店が見つかりました</p>
             {% else %}
                 <h1 class="search-title">お店を検索</h1>
                 <p class="search-subtitle">名古屋の美味しいお店を見つけよう</p>
@@ -126,35 +129,37 @@
                 </div>
             </div>
 
-            <!-- 店舗リスト -->
-            <div class="shops-grid" id="shopsList">
+            <!-- shop_list.htmlと同じ店舗表示 -->
+            <div class="shops-grid">
                 {% for shop_data in shops_with_favorites %}
                     {% with shop=shop_data.shop %}
-                    <div class="shop-card" data-shop-name="{{ shop.name }}" data-seats="{{ shop.seat_count }}" data-images="{{ shop.images.count }}">
-                        <a href="{% url 'shops:shop_detail' shop.pk %}" class="shop-link">
+                    <div class="shop-card" data-shop-id="{{ shop_data.shop.pk }}" data-shop-name="{{ shop_data.shop.name }}" data-seats="{{ shop_data.shop.seat_count }}" data-images="{{ shop_data.shop.images.count }}">
+                        <a href="{% url 'shops:shop_detail' shop_data.shop.pk %}" class="shop-link">
+                            <!-- =================================== -->
                             <!-- 画像ギャラリー -->
+                            <!-- =================================== -->
                             <div class="shop-gallery">
-                                {% if shop.images.exists %}
+                                {% if shop_data.shop.images.exists %}
                                     <div class="image-main">
-                                        <img src="{{ shop.images.first.image.url }}" 
-                                             alt="{{ shop.name }}"
+                                        <img src="{{ shop_data.shop.images.first.image.url }}" 
+                                             alt="{{ shop_data.shop.name }}"
                                              class="main-image">
                                         <div class="image-overlay">
                                             <i data-feather="zoom-in"></i>
                                         </div>
                                     </div>
                                     
-                                    {% if shop.images.count > 1 %}
+                                    {% if shop_data.shop.images.count > 1 %}
                                         <div class="image-thumbnails">
-                                            {% for image in shop.images.all|slice:"1:4" %}
+                                            {% for image in shop_data.shop.images.all|slice:"1:5" %}
                                                 <div class="thumbnail">
-                                                    <img src="{{ image.image.url }}" alt="{{ shop.name }}">
+                                                    <img src="{{ image.image.url }}" alt="{{ shop_data.shop.name }}">
                                                 </div>
                                             {% endfor %}
                                             
-                                            {% if shop.images.count > 4 %}
+                                            {% if shop_data.shop.images.count > 4 %}
                                                 <div class="thumbnail more-photos">
-                                                    <span>+{{ shop.images.count|add:"-4" }}</span>
+                                                    <span>+{{ shop_data.shop.images.count|add:"-4" }}</span>
                                                 </div>
                                             {% endif %}
                                         </div>
@@ -167,71 +172,96 @@
                                 {% endif %}
                                 
                                 <!-- 画像数バッジ -->
-                                {% if shop.images.count > 0 %}
+                                {% if shop_data.shop.images.count > 0 %}
                                     <div class="image-count-badge">
                                         <i data-feather="camera"></i>
-                                        <span>{{ shop.images.count }}</span>
+                                        <span>{{ shop_data.shop.images.count }}</span>
                                     </div>
                                 {% endif %}
                             </div>
 
+                            <!-- =================================== -->
                             <!-- ショップ情報 -->
+                            <!-- =================================== -->
                             <div class="shop-content">
                                 <div class="shop-header">
-                                    <h2 class="shop-name">{{ shop.name }}</h2>
-                                    <div class="shop-badge">
-                                        <i data-feather="award"></i>
-                                        <span>おすすめ</span>
-                                    </div>
+                                    <h2 class="shop-name">{{ shop_data.shop.name }}</h2>
+                                    
+                                    <!-- カテゴリー表示 -->
+                                    {% if shop_data.categories %}
+                                        <div class="shop-categories">
+                                            {% for shop_category in shop_data.categories %}
+                                                <a href="{% url 'shops:search' %}?category={{ shop_category.category.id }}" 
+                                                   class="category-tag">
+                                                    {{ shop_category.category.name }}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="shop-details">
                                     <div class="detail-item">
                                         <i data-feather="map-pin"></i>
-                                        <span>{{ shop.address }}</span>
+                                        <span>{{ shop_data.shop.address }}</span>
                                     </div>
                                     
                                     <div class="detail-item">
                                         <i data-feather="phone"></i>
-                                        <span>{{ shop.phone_number|default:"お問い合わせ時間をご確認ください" }}</span>
+                                        <span>{{ shop_data.shop.phone_number|default:"お問い合わせ時間をご確認ください" }}</span>
                                     </div>
                                     
                                     <div class="detail-item">
                                         <i data-feather="users"></i>
-                                        <span>{{ shop.seat_count }}席</span>
+                                        <span>{{ shop_data.shop.seat_count }}席</span>
                                     </div>
                                 </div>
 
+                                <!-- =================================== -->
                                 <!-- アクションボタン -->
+                                <!-- =================================== -->
                                 <div class="shop-actions">
                                     <button class="btn-favorite {% if shop_data.is_favorited %}favorited{% endif %}" 
-                                            data-shop-id="{{ shop.pk }}"
+                                            data-shop-id="{{ shop_data.shop.pk }}"
                                             data-is-favorited="{{ shop_data.is_favorited|yesno:'true,false' }}"
-                                            data-favorite-count="{{ shop_data.favorite_count }}"
-                                            onclick="toggleFavorite(event, {{ shop.pk }})">
+                                            data-favorite-count="{{ shop_data.favorite_count }}">
                                         <i data-feather="heart"></i>
-                                        <span>お気に入り ({{ shop_data.favorite_count }})</span>
+                                        <span>{% if shop_data.is_favorited %}お気に入り済み{% else %}お気に入り{% endif %} ({{ shop_data.favorite_count }})</span>
                                     </button>
                                     
-                                    <button class="btn-share" data-shop-id="{{ shop.pk }}" onclick="shareShop(event, {{ shop.pk }})">
+                                    <button class="btn-share" 
+                                            data-shop-id="{{ shop_data.shop.pk }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); shareShop({{ shop_data.shop.pk }});">
                                         <i data-feather="share-2"></i>
                                         <span>共有</span>
                                     </button>
                                 </div>
                             </div>
 
+                            <!-- =================================== -->
                         </a>
                     </div>
                     {% endwith %}
+                {% empty %}
+                    <!-- =================================== -->
+                    <!-- 検索結果がない場合のメッセージ -->
+                    <!-- =================================== -->
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i data-feather="search"></i>
+                        </div>
+                        <h3>検索結果が見つかりませんでした</h3>
+                        {% if query %}
+                            <p>「{{ query }}」に一致するお店が見つかりませんでした。</p>
+                        {% else %}
+                            <p>検索キーワードを入力してお店を探してみてください。</p>
+                        {% endif %}
+                        <a href="{% url 'shops:shop_list' %}" class="btn-reset">
+                            <i data-feather="refresh-cw"></i>
+                            <span>すべての店舗を表示</span>
+                        </a>
+                    </div>
                 {% endfor %}
-            </div>
-
-            <!-- ページネーション（将来的な拡張） -->
-            <div class="pagination-container">
-                <button class="load-more-btn" onclick="loadMoreResults()">
-                    <i data-feather="plus"></i>
-                    <span>さらに表示</span>
-                </button>
             </div>
 
         {% else %}
@@ -627,8 +657,6 @@
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     margin-bottom: 3rem;
-    width: 100% !important;
-    max-width: 100% !important;
 }
 
 .shop-card {
@@ -650,7 +678,6 @@
     display: block;
     text-decoration: none;
     color: inherit;
-    height: 100%;
 }
 
 /* 画像ギャラリー */
@@ -703,13 +730,13 @@
     bottom: 0.75rem;
     right: 0.75rem;
     display: flex;
-    gap: 0.25rem;
+    gap: 0.375rem;
 }
 
 .thumbnail {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 0.375rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
     overflow: hidden;
     border: 2px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -739,7 +766,7 @@
     align-items: center;
     justify-content: center;
     color: var(--gray-500);
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
 
 .no-image i {
@@ -767,23 +794,22 @@
     height: 1rem;
 }
 
+/* =================================== */
 /* ショップコンテンツ */
+/* =================================== */
 .shop-content {
     padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
 }
 
 .shop-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 .shop-name {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--gray-800);
     margin: 0;
@@ -791,50 +817,62 @@
     flex: 1;
 }
 
-.shop-badge {
+/* カテゴリータグ */
+.shop-categories {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: 0.375rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
+    margin: 0.5rem 0;
 }
 
-.shop-badge i {
-    width: 1rem;
-    height: 1rem;
+.category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--gray-200);
+}
+
+.category-tag:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-1px);
 }
 
 .shop-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    margin-bottom: 1.5rem;
 }
 
 .detail-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    margin-bottom: 0.75rem;
     color: var(--gray-600);
     font-size: 0.875rem;
 }
 
 .detail-item i {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 1rem;
+    height: 1rem;
     color: var(--primary);
     flex-shrink: 0;
 }
 
+/* =================================== */
 /* アクションボタン */
+/* =================================== */
 .shop-actions {
     display: flex;
     gap: 0.75rem;
-    margin-top: auto;
 }
 
 .btn-favorite,
@@ -869,6 +907,68 @@
 
 .btn-favorite i,
 .btn-share i {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* 空の状態 */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--gray-50);
+    border-radius: 1.5rem;
+    border: 2px dashed var(--gray-300);
+}
+
+.empty-icon {
+    width: 5rem;
+    height: 5rem;
+    background: var(--gray-200);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: var(--gray-500);
+}
+
+.empty-icon i {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0 0 0.75rem 0;
+}
+
+.empty-state p {
+    color: var(--gray-600);
+    margin: 0 0 2rem 0;
+}
+
+.btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-reset:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-reset i {
     width: 1rem;
     height: 1rem;
 }
@@ -1049,6 +1149,39 @@
         gap: 1.5rem;
     }
     
+    .shop-card {
+        flex-direction: column;
+        max-width: 100%;
+    }
+    
+    .shop-image-container {
+        width: 100%;
+        max-width: none;
+        min-height: 200px;
+    }
+    
+    .shop-content {
+        padding: 1rem;
+        min-height: auto;
+    }
+    
+    .shop-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .shop-name {
+        font-size: 1.1rem;
+        min-width: auto;
+    }
+    
+    .shop-actions {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+    }
+    
     .results-header {
         flex-direction: column;
         align-items: flex-start;
@@ -1076,6 +1209,27 @@
     
     .search-title {
         font-size: 1.75rem;
+    }
+    
+    .shop-content {
+        padding: 0.75rem;
+    }
+    
+    .shop-name {
+        font-size: 1rem;
+    }
+    
+    .detail-item {
+        font-size: 0.8rem;
+    }
+    
+    .category-tags {
+        gap: 0.25rem;
+    }
+    
+    .category-tag {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
     }
     
     .search-subtitle {
@@ -1153,7 +1307,7 @@ function clearSearch() {
 
 // ソート機能
 function sortResults(sortBy) {
-    const shopsList = document.getElementById('shopsList');
+    const shopsList = document.querySelector('.shops-grid');
     const shops = Array.from(shopsList.querySelectorAll('.shop-card'));
     
     shops.sort((a, b) => {
@@ -1179,36 +1333,70 @@ function sortResults(sortBy) {
     }, 150);
 }
 
-// お気に入り機能
-function toggleFavorite(event, shopId) {
-    event.preventDefault();
-    event.stopPropagation();
+// お気に入りボタンの初期化関数
+function initializeFavoriteButtons() {
+    console.log('Initializing favorite buttons...');
     
+    document.querySelectorAll('.btn-favorite:not([data-initialized])').forEach(btn => {
+        console.log('Processing button:', btn);
+        
+        const shopId = btn.getAttribute('data-shop-id');
+        const isFavorited = btn.getAttribute('data-is-favorited') === 'true';
+        const favoriteCount = parseInt(btn.getAttribute('data-favorite-count')) || 0;
+        
+        console.log('Button data:', { shopId, isFavorited, favoriteCount });
+        
+        // アイコン要素の確認（<i>と<svg>両方を試す）
+        let icon = btn.querySelector('i[data-feather="heart"]');
+        if (!icon) {
+            icon = btn.querySelector('svg');
+        }
+        
+        console.log('Icon element found:', icon);
+        
+        // アイコンが見つからない場合は新しく作成
+        if (!icon) {
+            console.log('Creating new icon element');
+            const newIcon = document.createElement('i');
+            newIcon.setAttribute('data-feather', 'heart');
+            btn.insertBefore(newIcon, btn.firstChild);
+        }
+        
+        updateFavoriteButton(btn, isFavorited, favoriteCount);
+        
+        btn.setAttribute('data-initialized', 'true');
+        
+        console.log('Button initialized successfully for shop:', shopId);
+    });
+    
+    console.log('Favorite buttons initialization completed');
+}
+
+// グローバル関数として定義 - shop_list.htmlと同じ
+function toggleFavorite(shopId) {
     console.log('toggleFavorite called with shopId:', shopId);
     
-    const btn = event.target.closest('.btn-favorite');
-    const icon = btn.querySelector('i');
-    
-    if (!btn) {
+    const favoriteBtn = document.querySelector(`.btn-favorite[data-shop-id="${shopId}"]`);
+    if (!favoriteBtn) {
         console.error('Favorite button not found for shop:', shopId);
         return;
     }
     
     // リクエスト中の重複防止
-    if (btn.disabled || btn.dataset.requesting === 'true') {
+    if (favoriteBtn.disabled || favoriteBtn.dataset.requesting === 'true') {
         console.log('Request already in progress, ignoring...');
         return;
     }
     
     // リクエスト開始状態に設定
-    btn.disabled = true;
-    btn.dataset.requesting = 'true';
-    btn.style.opacity = '0.6';
+    favoriteBtn.disabled = true;
+    favoriteBtn.dataset.requesting = 'true';
+    favoriteBtn.style.opacity = '0.6';
     
     // アニメーション効果
-    btn.style.transform = 'scale(0.9)';
+    favoriteBtn.style.transform = 'scale(0.95)';
     setTimeout(() => {
-        btn.style.transform = 'scale(1)';
+        favoriteBtn.style.transform = 'scale(1)';
     }, 150);
     
     // CSRFトークンの取得（複数の方法を試す）
@@ -1269,29 +1457,23 @@ function toggleFavorite(event, shopId) {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/x-www-form-urlencoded',
         }
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
+    .then(async (response) => {
+        const text = await response.text();
+        try { return JSON.parse(text); } catch { return { success: false, message: 'サーバー応答の解析に失敗しました。', raw: text }; }
     })
     .then(data => {
-        console.log('Response data:', data);
         if (data.success) {
-            // ボタンのデータ属性を更新
-            btn.dataset.isFavorited = data.is_favorited;
-            btn.dataset.favoriteCount = data.favorite_count;
-            
-            // ボタンの見た目を更新
-            updateFavoriteButtonAppearance(btn, data.is_favorited, data.favorite_count);
-            
-            // 成功メッセージを表示
+            favoriteBtn.dataset.isFavorited = data.is_favorited;
+            favoriteBtn.dataset.favoriteCount = data.favorite_count;
+            updateFavoriteButton(favoriteBtn, data.is_favorited, data.favorite_count);
             showToast(data.message);
-            console.log('Favorite updated successfully');
         } else {
-            console.error('API Error:', data.message);
-            alert('エラー: ' + data.message);
+            alert(data.message || 'この操作は会員限定です。マイページで契約をご検討ください。');
+            if (data.redirect_url) window.location.href = data.redirect_url;
         }
     })
     .catch(error => {
@@ -1300,16 +1482,74 @@ function toggleFavorite(event, shopId) {
     })
     .finally(() => {
         // リクエスト完了時に状態をリセット
-        btn.disabled = false;
-        btn.dataset.requesting = 'false';
-        btn.style.opacity = '1';
+        favoriteBtn.disabled = false;
+        favoriteBtn.dataset.requesting = 'false';
+        favoriteBtn.style.opacity = '1';
     });
 }
 
+function updateFavoriteButton(btn, isFavorited, favoriteCount) {
+    console.log('updateFavoriteButton called:', btn, isFavorited, favoriteCount);
+    
+    if (!btn) {
+        console.error('Button element is null or undefined');
+        return;
+    }
+    
+    // アイコン要素の取得（<i>と<svg>両方を試す）
+    let icon = btn.querySelector('i[data-feather="heart"]');
+    if (!icon) {
+        icon = btn.querySelector('svg');
+    }
+    
+    const textSpan = btn.querySelector('span');
+    
+    console.log('Icon element found:', icon);
+    console.log('Text span found:', textSpan);
+    
+    if (isFavorited) {
+        // お気に入り済み状態
+        btn.classList.add('favorited');
+        if (textSpan) {
+            textSpan.textContent = `お気に入り済み (${favoriteCount})`;
+        }
+        console.log('Set to favorited state');
+    } else {
+        // お気に入り未登録状態
+        btn.classList.remove('favorited');
+        if (textSpan) {
+            textSpan.textContent = `お気に入り (${favoriteCount})`;
+        }
+        console.log('Set to not favorited state');
+    }
+    
+    // データ属性も更新
+    btn.dataset.isFavorited = isFavorited;
+    btn.dataset.favoriteCount = favoriteCount;
+    
+    // 元のアイコン要素を確実に復元してからFeatherアイコンを再描画
+    if (icon && icon.tagName === 'SVG') {
+        // SVG要素の場合、元のi要素に戻す
+        const newIcon = document.createElement('i');
+        newIcon.setAttribute('data-feather', 'heart');
+        icon.parentNode.replaceChild(newIcon, icon);
+    } else if (!icon) {
+        // アイコン要素が見つからない場合、新しく作成
+        const newIcon = document.createElement('i');
+        newIcon.setAttribute('data-feather', 'heart');
+        btn.insertBefore(newIcon, btn.firstChild);
+    }
+    
+    // Featherアイコンを再描画（非同期処理として実行）
+    setTimeout(() => {
+        feather.replace();
+        console.log('Feather icons replaced');
+    }, 10);
+}
+
 // 共有機能
-function shareShop(event, shopId) {
-    event.preventDefault();
-    event.stopPropagation();
+function shareShop(shopId) {
+    console.log('Share button clicked for shop:', shopId);
     
     if (navigator.share) {
         navigator.share({
@@ -1351,80 +1591,37 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(card);
     });
     
-    // Feather Iconsの初期化
-    feather.replace();
-    
-    // お気に入りボタンの初期状態を設定
+    // お気に入りボタンの機能 - shop_list.htmlと同じ方式
     document.querySelectorAll('.btn-favorite').forEach(btn => {
-        const isFavorited = btn.dataset.isFavorited === 'true';
-        const favoriteCount = parseInt(btn.dataset.favoriteCount) || 0;
-        updateFavoriteButtonAppearance(btn, isFavorited);
-        console.log(`Initialized favorite button for shop ${btn.dataset.shopId}: favorited=${isFavorited}, count=${favoriteCount}`);
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const shopId = this.getAttribute('data-shop-id');
+            console.log('Favorite button clicked for shop:', shopId);
+            
+            // アニメーション効果
+            this.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+            
+            toggleFavorite(shopId);
+        });
     });
-});
-
-// お気に入りボタンの見た目を更新する関数
-function updateFavoriteButtonAppearance(btn, isFavorited, favoriteCount) {
-    console.log('updateFavoriteButtonAppearance called:', btn, isFavorited, favoriteCount);
     
-    if (!btn) {
-        console.error('Button element is null or undefined');
-        return;
-    }
-    
-    // アイコン要素の取得（<i>と<svg>両方を試す）
-    let icon = btn.querySelector('i[data-feather="heart"]');
-    if (!icon) {
-        icon = btn.querySelector('svg');
-    }
-    
-    const textSpan = btn.querySelector('span');
-    
-    console.log('Icon element found:', icon);
-    console.log('Text span found:', textSpan);
-    
-    // favoriteCountが渡されない場合はデータ属性から取得
-    if (favoriteCount === undefined) {
-        favoriteCount = parseInt(btn.dataset.favoriteCount) || 0;
-    }
-    
-    if (isFavorited) {
-        btn.classList.add('favorited');
-        if (textSpan) {
-            textSpan.textContent = `お気に入り済み (${favoriteCount})`;
-        }
-        console.log('Set to favorited state');
-    } else {
-        btn.classList.remove('favorited');
-        if (textSpan) {
-            textSpan.textContent = `お気に入り (${favoriteCount})`;
-        }
-        console.log('Set to not favorited state');
-    }
-    
-    // データ属性も更新
-    btn.dataset.isFavorited = isFavorited;
-    btn.dataset.favoriteCount = favoriteCount;
-    
-    // 元のアイコン要素を確実に復元してからFeatherアイコンを再描画
-    if (icon && icon.tagName === 'SVG') {
-        // SVG要素の場合、元のi要素に戻す
-        const newIcon = document.createElement('i');
-        newIcon.setAttribute('data-feather', 'heart');
-        icon.parentNode.replaceChild(newIcon, icon);
-    } else if (!icon) {
-        // アイコン要素が見つからない場合、新しく作成
-        const newIcon = document.createElement('i');
-        newIcon.setAttribute('data-feather', 'heart');
-        btn.insertBefore(newIcon, btn.firstChild);
-    }
-    
-    // Featherアイコンを再描画（非同期処理として実行）
+    // 最初からあるお気に入りボタンも初期化
+    // Featherアイコンの読み込みを待ってから初期化
     setTimeout(() => {
+        // 再度Featherアイコンを置換
         feather.replace();
-        console.log('Feather icons replaced');
-    }, 10);
-}
+        
+        // 少し待ってから初期化
+        setTimeout(() => {
+            initializeFavoriteButtons();
+        }, 50);
+    }, 200);
+});
 
 // トースト通知を表示する関数
 function showToast(message) {
@@ -1458,5 +1655,12 @@ function showToast(message) {
         }, 300);
     }, 3000);
 }
+
+// Feather iconsを初期化
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
 </script>
 {% endblock %}
