@@ -281,13 +281,24 @@ def update_subscription(request):
             subscription = None
 
         if is_active:
-            # 有効化要求: Stripeのsubscription_idが保存されている既存契約者のみ許可
+            # 有効化要求: Stripe上でsubscription.status=activeの場合のみ許可
             if not subscription or not getattr(subscription, 'stripe_subscription_id', None):
                 return JsonResponse({
                     'success': False,
                     'message': '有効化はStripeでのご契約完了後に自動で行われます。マイページの「プレミアム会員になる」から決済を完了してください。'
                 }, status=403)
-            # 既存契約者は有効化可能
+            try:
+                s = stripe.Subscription.retrieve(subscription.stripe_subscription_id)
+                status = getattr(s, 'status', None)
+            except Exception:
+                status = None
+
+            if status != 'active':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Stripe決済が完了していません（status!='"'active'"'）。決済完了後に自動で有効になります。'
+                }, status=403)
+
             subscription.is_active = True
             subscription.save()
             return JsonResponse({'success': True, 'message': 'サブスクリプションを有効にしました。'})
@@ -408,7 +419,7 @@ class PaySuccessView(TemplateView):
                     subscription.stripe_subscription_id = getattr(session, 'subscription', None)
                 except Exception:
                     pass
-                subscription.is_active = True
+                # active化はwebhook/customer.subscription.updatedでのみ行う
                 subscription.save()
 
         # 取得失敗などのstripe側のエラー
@@ -561,8 +572,9 @@ class PayWithStripeView(View):
             )
 
         # 直近のセッションIDをDBへ保存（決済完了前なのでis_activeはFalseのまま）
-        subscription, _ = Subscription.objects.get_or_create(user=request.user)
+        subscription, created = Subscription.objects.get_or_create(user=request.user)
         subscription.stripe_id = checkout_session.id
+        # 既存レコードの場合も含めて確実に無効化（決済成功まで有効化しない）
         subscription.is_active = False
         subscription.save()
 

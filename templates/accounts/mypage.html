@@ -154,8 +154,8 @@
                         <i data-feather="credit-card"></i>
                         サブスクリプション
                     </h3>
-                    {# 契約状況に応じて出し分け: 顧客IDが保存されている=編集可能 #}
-                    {% if subscription and subscription.stripe_customer_id %}
+                    {# 契約状況に応じて出し分け: 有効な契約=編集可能、無効または未契約=契約可能 #}
+                    {% if subscription and subscription.is_active and subscription.stripe_customer_id %}
                         <a class="btn-edit" href="{% url 'accounts:subscription_portal' %}">
                             <i data-feather="settings"></i>
                             編集（Stripe）
@@ -176,7 +176,7 @@
                             <span>ステータス</span>
                         </div>
                         <div class="info-value">
-                            {% if subscription %}
+                            {% if subscription and subscription.is_active %}
                                 <span class="status-active">
                                     <i data-feather="check-circle"></i>
                                     有効
@@ -197,7 +197,7 @@
                             <span>開始日</span>
                         </div>
                         <div class="info-value">
-                            {% if subscription %}
+                            {% if subscription and subscription.is_active %}
                                 {{ subscription.start_date|date:"Y年n月j日" }}
                             {% else %}
                                 <span class="text-muted">未契約</span>
@@ -215,7 +215,7 @@
                         </div>
                     {% endif %}
 
-                    {% if subscription %}
+                    {% if subscription and subscription.is_active %}
                         <div class="info-row">
                             <div class="info-label">
                                 <i data-feather="dollar-sign"></i>
@@ -226,7 +226,7 @@
                     {% endif %}
                 </div>
 
-                {% if not subscription %}
+                {% if not subscription or not subscription.is_active %}
                 <div class="subscription-promotion">
                     <div class="promotion-content">
                         <div class="promotion-icon">
@@ -528,6 +528,8 @@
         </div>
     </div>
 </div>
+
+    
 
 <!-- =================================== -->
 <!-- マイページ専用CSS -->
@@ -1904,4 +1906,5 @@ function removeFavorite(shopId) {
     });
 }
 </script>
+ 
 {% endblock %}

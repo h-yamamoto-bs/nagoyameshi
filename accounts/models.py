@@ -49,7 +49,7 @@ class Subscription(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
     start_date = models.DateField(auto_now_add=True)
     end_date = models.DateField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=False)
     stripe_id = models.CharField(max_length=255, null=True, blank=True)
     # 追加: Stripe連携に必要なID
     stripe_customer_id = models.CharField(max_length=255, null=True, blank=True)

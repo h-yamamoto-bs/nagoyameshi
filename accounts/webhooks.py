@@ -54,11 +54,10 @@ def _update_local_subscription_from_event(data_object: dict) -> None:
         updated = True
 
     # is_active flag
-    if status == 'canceled':
-        new_active = False
-    else:
-        today = dj_timezone.localdate()
-        new_active = not (end_date and end_date < today)
+    # 決済が成功してStripeのSubscriptionがactiveになっている場合のみ有効とする。
+    # incomplete/trialing/past_due等は有効化しない。
+    today = dj_timezone.localdate()
+    new_active = (status == 'active') and not (end_date and end_date < today)
 
     if new_active != sub_model.is_active:
         sub_model.is_active = new_active

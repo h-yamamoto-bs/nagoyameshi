@@ -56,15 +56,9 @@ def sync_subscription_from_stripe(user) -> None:
             sub_model.end_date = end_date
             updated_fields.append('end_date')
 
-        # 有効/無効
+        # 有効/無効: StripeのstatusがactiveのときのみTrue
         today = dj_timezone.localdate()
-        new_is_active = sub_model.is_active
-        if status == 'canceled':
-            new_is_active = False
-        else:
-            new_is_active = True
-            if end_date and end_date < today:
-                new_is_active = False
+        new_is_active = (status == 'active') and not (end_date and end_date < today)
 
         if new_is_active != sub_model.is_active:
             sub_model.is_active = new_is_active
