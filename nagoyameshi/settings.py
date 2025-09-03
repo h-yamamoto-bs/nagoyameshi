@@ -11,8 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 import environ
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -93,9 +96,24 @@ WSGI_APPLICATION = 'nagoyameshi.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': env.str('DB_DATABASE', default='nagoyameshi_db'),
+        'USER': env.str('DB_USERNAME', default='root'),
+        'PASSWORD': env.str('DB_PASSWORD', default=''),
+        'HOST': env.str('DB_HOST', default='127.0.0.1'),
+        'PORT': env.str('DB_PORT', default='3306'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
+}
+
+# 旧SQLiteデータベース（移行用）
+DATABASES['sqlite_old'] = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': str(BASE_DIR / 'db.sqlite3'),
 }
 
 # アカウントモデルの設定
