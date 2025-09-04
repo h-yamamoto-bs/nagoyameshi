@@ -42,9 +42,9 @@ SECRET_KEY = env.str('SECRET_KEY')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 
 # Application definition
@@ -94,27 +94,36 @@ WSGI_APPLICATION = 'nagoyameshi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': env.str('DB_DATABASE', default='nagoyameshi_db'),
-        'USER': env.str('DB_USERNAME', default='root'),
-        'PASSWORD': env.str('DB_PASSWORD', default=''),
-        'HOST': env.str('DB_HOST', default='127.0.0.1'),
-        'PORT': env.str('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'use_unicode': True,
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+# DATABASE_URL を優先（Heroku 用）、フォールバックで環境変数、最終的に sqlite
+DATABASE_URL = env.str('DATABASE_URL', default='')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': env.db('DATABASE_URL')
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': env.str('DB_DATABASE', default='nagoyameshi_db'),
+            'USER': env.str('DB_USERNAME', default='root'),
+            'PASSWORD': env.str('DB_PASSWORD', default=''),
+            'HOST': env.str('DB_HOST', default='127.0.0.1'),
+            'PORT': env.str('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'use_unicode': True,
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    }
 
 # 旧SQLiteデータベース（移行用）
-DATABASES['sqlite_old'] = {
-    'ENGINE': 'django.db.backends.sqlite3',
-    'NAME': str(BASE_DIR / 'db.sqlite3'),
-}
+if 'sqlite_old' not in DATABASES:
+    DATABASES['sqlite_old'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': str(BASE_DIR / 'db.sqlite3'),
+    }
 
 # アカウントモデルの設定
 AUTH_USER_MODEL = "accounts.User"
