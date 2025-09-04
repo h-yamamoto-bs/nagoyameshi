@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load heroku_filters %}
 
 {% block content %}
 <!-- CSRFトークンをページに埋め込み -->
@@ -46,7 +47,7 @@
                     <div class="shop-gallery">
                                                     {% if shop_data.shop.images.exists %}
                             <div class="image-main">
-                                <img src="{{ shop_data.shop.images.first.image.url }}" 
+                                <img src="{{ shop_data.shop.images.first.image.url|heroku_media_url }}" 
                                      alt="{{ shop_data.shop.name }}"
                                      class="main-image">
                                 <div class="image-overlay">
@@ -58,7 +59,7 @@
                                 <div class="image-thumbnails">
                                                                             {% for image in shop_data.shop.images.all|slice:"1:5" %}
                                         <div class="thumbnail">
-                                            <img src="{{ image.image.url }}" alt="{{ shop_data.shop.name }}">
+                                            <img src="{{ image.image.url|heroku_media_url }}" alt="{{ shop_data.shop.name }}">
                                         </div>
                                     {% endfor %}
                                     
