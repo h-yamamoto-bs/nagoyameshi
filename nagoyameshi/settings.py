@@ -145,7 +145,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 # セッション設定（クエリ制限対策）
 # データベースではなくローカルメモリでセッションを管理
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_CACHE_ALIAS = 'default'
 SESSION_SAVE_EVERY_REQUEST = False  # リクエスト毎の保存を無効化
 SESSION_COOKIE_AGE = 86400  # 24時間でセッション期限切れ
@@ -176,6 +176,25 @@ if env.bool('ENABLE_DB_LOGGING', default=False):
             'django.db.backends': {
                 'handlers': ['console'],
                 'level': 'DEBUG',
+            },
+        },
+    }
+else:
+    LOGGING = {
+        'disable_existing_loggers': False,
+        'version': 1,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'DEBUG', 
+            },
+        },
+
+        'loggers': {
+            'django.db.backends': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': False,
             },
         },
     }
