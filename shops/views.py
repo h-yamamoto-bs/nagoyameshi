@@ -19,6 +19,7 @@ class ShopListView(ListView):
     template_name = 'shops/shop_list.html'
     context_object_name = 'shops'
     paginate_by = 10
+    ordering = ['id']  # ページネーション警告を解決するための順序指定
     
     def dispatch(self, request, *args, **kwargs):
         # CSRFトークンを確実に生成
@@ -149,7 +150,7 @@ class ShopSearchView(ListView):
             # 検索条件がない場合は全店舗を表示
             queryset = queryset.all()
         
-        # ページネーション警告を解決するために順序を指定
+        # ページネーション警告を解決するために順序を確実に指定
         return queryset.order_by('id')
 
     def get_context_data(self, **kwargs):
