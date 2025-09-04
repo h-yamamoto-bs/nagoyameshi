@@ -101,6 +101,20 @@ if DATABASE_URL:
     DATABASES = {
         'default': env.db('DATABASE_URL')
     }
+    # MySQL 接続プール設定（クエリ制限対策）
+    if 'mysql' in DATABASE_URL:
+        DATABASES['default'].setdefault('OPTIONS', {})
+        DATABASES['default']['OPTIONS'].update({
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'connect_timeout': 60,
+            'read_timeout': 60,
+            'write_timeout': 60,
+        })
+        # 接続プールサイズを制限してクエリ数を抑制
+        DATABASES['default']['CONN_MAX_AGE'] = 600  # 10分間接続を保持（延長）
+        DATABASES['default']['CONN_HEALTH_CHECKS'] = False  # ヘルスチェック無効化
 else:
     DATABASES = {
         'default': {
@@ -127,6 +141,43 @@ if 'sqlite_old' not in DATABASES:
 
 # アカウントモデルの設定
 AUTH_USER_MODEL = "accounts.User"
+
+# セッション設定（クエリ制限対策）
+# データベースではなくローカルメモリでセッションを管理
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_SAVE_EVERY_REQUEST = False  # リクエスト毎の保存を無効化
+SESSION_COOKIE_AGE = 86400  # 24時間でセッション期限切れ
+
+# キャッシュ設定（ローカルメモリ使用）
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 86400,  # 24時間
+        'OPTIONS': {
+            'MAX_ENTRIES': 10000,
+        }
+    }
+}
+
+# データベースクエリログ設定（本番でのデバッグ用）
+if env.bool('ENABLE_DB_LOGGING', default=False):
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'loggers': {
+            'django.db.backends': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+            },
+        },
+    }
 
 
 # Password validation
