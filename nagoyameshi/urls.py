@@ -26,4 +26,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('shops/', include('shops.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Heroku本番環境でもメディアファイルを配信（一時的な解決策）
+if settings.DEBUG or True:  # Heroku用に強制的に有効化
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
