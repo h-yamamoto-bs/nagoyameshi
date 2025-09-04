@@ -149,7 +149,8 @@ class ShopSearchView(ListView):
             # 検索条件がない場合は全店舗を表示
             queryset = queryset.all()
         
-        return queryset
+        # ページネーション警告を解決するために順序を指定
+        return queryset.order_by('id')
 
     def get_context_data(self, **kwargs):
         # 親クラスのコンテキストを取得
