@@ -423,6 +423,9 @@ def load_more_shops(request):
             image_url = ''
             if shop.images.exists():
                 image_url = shop.images.first().image.url
+                # Heroku用: メディアURLを静的ファイルURLに変換
+                if image_url.startswith('/media/'):
+                    image_url = image_url.replace('/media/', '/static/')
             
             shops_data.append({
                 'id': shop.pk,

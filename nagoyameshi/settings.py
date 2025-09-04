@@ -218,6 +218,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # Heroku 用
 
+# 静的ファイルディレクトリの設定（メディアファイルの代替パス）
+STATICFILES_DIRS = [
+    BASE_DIR / 'media',  # メディアファイルを静的ファイルとして配信
+]
+
 # WhiteNoise設定（Heroku用）
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 

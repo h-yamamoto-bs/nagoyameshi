@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load heroku_filters %}
 
 {% block content %}
 <!-- CSRFトークンをページに含める -->
@@ -37,7 +38,7 @@
                     <div class="main-image-container">
                         <div class="main-image-wrapper">
                             <img id="mainImage" 
-                                 src="{{ shop.images.first.image.url }}" 
+                                 src="{{ shop.images.first.image.url|heroku_media_url }}" 
                                  alt="{{ shop.name }}"
                                  class="main-image">
                             <div class="image-overlay">
@@ -70,7 +71,7 @@
                                 {% for image in shop.images.all %}
                                     <div class="thumbnail {% if forloop.first %}active{% endif %}" 
                                          data-index="{{ forloop.counter0 }}">
-                                        <img src="{{ image.image.url }}" alt="{{ shop.name }}">
+                                        <img src="{{ image.image.url|heroku_media_url }}" alt="{{ shop.name }}">
                                     </div>
                                 {% endfor %}
                             </div>
@@ -368,7 +369,7 @@
                 <div class="review-shop-info">
                     <div class="shop-info-card">
                         {% if shop.images.exists %}
-                            <img src="{{ shop.images.first.image.url }}" alt="{{ shop.name }}" class="shop-thumb">
+                            <img src="{{ shop.images.first.image.url|heroku_media_url }}" alt="{{ shop.name }}" class="shop-thumb">
                         {% else %}
                             <div class="shop-thumb-placeholder">
                                 <i data-feather="image"></i>
@@ -1524,7 +1525,7 @@
 <script id="shop-images-data" type="application/json">
 [
 {% for image in shop.images.all %}
-    {"url": "{{ image.image.url }}", "alt": "{{ shop.name }} - 画像{{ forloop.counter }}"}{% if not forloop.last %},{% endif %}
+    {"url": "{{ image.image.url|heroku_media_url }}", "alt": "{{ shop.name }} - 画像{{ forloop.counter }}"}{% if not forloop.last %},{% endif %}
 {% endfor %}
 ]
 </script>
