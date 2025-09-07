@@ -70,6 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'nagoyameshi.middleware.QueryLogMiddleware',  # DBクエリ監視用
 ]
 
 ROOT_URLCONF = 'nagoyameshi.urls'

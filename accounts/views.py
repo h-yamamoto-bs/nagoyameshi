@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from .models import User, Subscription
-from shops.models import Favorite, Review
+from shops.models import Favorite, Review, ShopCategory
 from django.views.generic import ListView, TemplateView, View
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -18,6 +18,7 @@ from django.utils.decorators import method_decorator
 import urllib.parse
 from datetime import datetime, timezone
 from .utils import sync_subscription_from_stripe
+from django.db.models import Count, Prefetch
 
 # ユーザー一覧
 class AccountListView(ListView):
@@ -168,13 +169,18 @@ class MyPageView(LoginRequiredMixin, TemplateView):
             except Exception:
                 pass
         
-        # お気に入り一覧の取得（最新5件）
-        favorites = Favorite.objects.filter(user=user).select_related('shop').order_by('-id')[:5]
+        # お気に入り一覧の取得（最新5件）- レビュー数も一緒に取得してN+1を防ぐ
+        favorites = Favorite.objects.filter(user=user).select_related('shop').prefetch_related(
+            'shop__images',
+            Prefetch('shop__categories', queryset=ShopCategory.objects.select_related('category'))
+        ).annotate(
+            shop_review_count=Count('shop__reviews', distinct=True)
+        ).order_by('-id')[:5]
         
         # レビュー一覧の取得（最新5件）
         reviews = Review.objects.filter(user=user).select_related('shop').order_by('-created_at')[:5]
         
-        # 統計情報
+        # 統計情報（一度のクエリで取得）
         favorite_count = Favorite.objects.filter(user=user).count()
         review_count = Review.objects.filter(user=user).count()
         

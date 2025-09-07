@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Shop, Review, Favorite, Category, ShopCategory, History
 from django.views.generic import ListView, DetailView
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Count, Exists, OuterRef, Prefetch
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -26,28 +26,41 @@ class ShopListView(ListView):
         get_token(request)
         return super().dispatch(request, *args, **kwargs)
     
+    def get_queryset(self):
+        """N+1クエリを防ぐため、必要なデータを一度で取得"""
+        queryset = Shop.objects.select_related().prefetch_related(
+            'images',
+            Prefetch('categories', queryset=ShopCategory.objects.select_related('category'))
+        ).annotate(
+            favorite_count=Count('favorites', distinct=True)
+        )
+        
+        # ログイン済みユーザーの場合、お気に入り状態も一緒に取得
+        if self.request.user.is_authenticated:
+            user_favorite_subquery = Favorite.objects.filter(
+                shop=OuterRef('pk'),
+                user=self.request.user
+            )
+            queryset = queryset.annotate(
+                is_favorited=Exists(user_favorite_subquery)
+            )
+        
+        return queryset.order_by(self.ordering[0])
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # 各店舗のお気に入り情報とカテゴリー情報を追加
+        # 最適化後：各店舗のデータは既にクエリセットに含まれている
         shops = context['shops']
-        shops_list = list(shops)  # QuerySetをリストに変換
         shops_with_favorites = []
         
-        for shop in shops_list:  # リストを使用
+        for shop in shops:
             shop_data = {
                 'shop': shop,
-                'is_favorited': False,
-                'favorite_count': shop.favorites.count(),
-                'categories': shop.categories.select_related('category')
+                'is_favorited': getattr(shop, 'is_favorited', False) if self.request.user.is_authenticated else False,
+                'favorite_count': shop.favorite_count,  # annotateされた値を使用
+                'categories': shop.categories.all()  # prefetchされたデータを使用
             }
-            
-            if self.request.user.is_authenticated:
-                shop_data['is_favorited'] = Favorite.objects.filter(
-                    shop=shop,
-                    user=self.request.user
-                ).exists()
-            
             shops_with_favorites.append(shop_data)
         
         context['shops_with_favorites'] = shops_with_favorites
@@ -64,6 +77,18 @@ class ShopDetailView(DetailView):
         get_token(request)
         return super().dispatch(request, *args, **kwargs)
     
+    def get_queryset(self):
+        """関連データを一度で取得してN+1クエリを防ぐ"""
+        return Shop.objects.select_related().prefetch_related(
+            'images',
+            Prefetch('categories', queryset=ShopCategory.objects.select_related('category')),
+            Prefetch('reviews', queryset=Review.objects.select_related('user').order_by('-created_at'))
+        ).annotate(
+            favorite_count=Count('favorites', distinct=True),
+            review_count=Count('reviews', distinct=True),
+            avg_rating=Avg('reviews__rating')
+        )
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         shop = self.get_object()
@@ -77,25 +102,31 @@ class ShopDetailView(DetailView):
         else:
             context['is_favorited'] = False
             
-        # お気に入り数を追加
-        context['favorite_count'] = shop.favorites.count()
+        # annotateされた値を使用（個別クエリを避ける）
+        context['favorite_count'] = shop.favorite_count
         
-        # 店舗のカテゴリー情報を追加
-        context['shop_categories'] = shop.categories.select_related('category')
+        # 店舗のカテゴリー情報（prefetchされたデータを使用）
+        context['shop_categories'] = shop.categories.all()
         
-        # レビュー関連の情報を追加
-        reviews = shop.reviews.select_related('user').order_by('-created_at')
+        # レビュー関連の情報（prefetchされたデータを使用）
+        reviews = shop.reviews.all()  # 既にorder_byされている
         context['reviews'] = reviews
-        context['review_count'] = reviews.count()
+        context['review_count'] = shop.review_count  # annotateされた値を使用
         
-        # 平均評価を計算
-        avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
+        # 平均評価を計算（annotateされた値を使用）
+        avg_rating = shop.avg_rating
         context['avg_rating'] = round(avg_rating, 1) if avg_rating else 0
         context['avg_rating_int'] = int(avg_rating) if avg_rating else 0
         
         # ログイン済みユーザーの既存レビューをチェック
         if self.request.user.is_authenticated:
-            context['user_review'] = shop.reviews.select_related('user').filter(user=self.request.user).first()
+            # prefetchされたレビューから検索（追加クエリなし）
+            user_review = None
+            for review in reviews:
+                if review.user_id == self.request.user.id:
+                    user_review = review
+                    break
+            context['user_review'] = user_review
         else:
             context['user_review'] = None
 
@@ -130,8 +161,23 @@ class ShopSearchView(ListView):
         query = self.request.GET.get('q')
         category_id = self.request.GET.get('category')
 
-        # 検索条件の準備
-        queryset = Shop.objects.prefetch_related('images', 'categories__category')
+        # 検索条件の準備 - N+1クエリを防ぐため必要なデータを一度で取得
+        queryset = Shop.objects.select_related().prefetch_related(
+            'images',
+            Prefetch('categories', queryset=ShopCategory.objects.select_related('category'))
+        ).annotate(
+            favorite_count=Count('favorites', distinct=True)
+        )
+
+        # ログイン済みユーザーの場合、お気に入り状態も一緒に取得
+        if self.request.user.is_authenticated:
+            user_favorite_subquery = Favorite.objects.filter(
+                shop=OuterRef('pk'),
+                user=self.request.user
+            )
+            queryset = queryset.annotate(
+                is_favorited=Exists(user_favorite_subquery)
+            )
 
         # カテゴリー検索の場合
         if category_id:
@@ -174,24 +220,18 @@ class ShopSearchView(ListView):
         result_count = self.get_queryset().count()
         context['result_count'] = result_count
 
-        # お気に入り情報とカテゴリー情報を含む店舗データを準備
+        # 最適化後：各店舗のデータは既にクエリセットに含まれている
         shops = context['shops']
-        shops_list = list(shops)  # QuerySetをリストに変換
         shops_with_favorites = []
         
-        for shop in shops_list:  # リストを使用
-            is_favorited = False
-            favorite_count = shop.favorites.count()
-            
-            if self.request.user.is_authenticated:
-                is_favorited = shop.favorites.filter(user=self.request.user).exists()
-            
-            shops_with_favorites.append({
+        for shop in shops:
+            shop_data = {
                 'shop': shop,
-                'is_favorited': is_favorited,
-                'favorite_count': favorite_count,
-                'categories': shop.categories.select_related('category')
-            })
+                'is_favorited': getattr(shop, 'is_favorited', False) if self.request.user.is_authenticated else False,
+                'favorite_count': shop.favorite_count,  # annotateされた値を使用
+                'categories': shop.categories.all()  # prefetchされたデータを使用
+            }
+            shops_with_favorites.append(shop_data)
         
         context['shops_with_favorites'] = shops_with_favorites
 
