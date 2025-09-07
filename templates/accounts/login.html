@@ -52,7 +52,7 @@
             </div>
 
             <div class="form-options">
-                <a href="#" class="forgot-password" onclick="alert('パスワードリセット機能は現在準備中です。'); return false;">
+                <a href="{% url 'accounts:password_reset' %}" class="forgot-password">
                     パスワードを忘れた方はこちら
                 </a>
             </div>

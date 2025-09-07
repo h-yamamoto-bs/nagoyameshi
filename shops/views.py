@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Shop, Review, Favorite, Category, ShopCategory, History
 from django.views.generic import ListView, DetailView
-from django.db.models import Q, Avg, Count, Exists, OuterRef, Prefetch
+from django.db.models import Q, Avg, Count, Exists, OuterRef
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -27,50 +27,47 @@ class ShopListView(ListView):
         return super().dispatch(request, *args, **kwargs)
     
     def get_queryset(self):
-        """N+1クエリを防ぐため、必要なデータを一度で取得"""
-        queryset = Shop.objects.select_related().prefetch_related(
-            'images',
-            Prefetch('categories', queryset=ShopCategory.objects.select_related('category'))
-        ).annotate(
-            favorite_count=Count('favorites', distinct=True)
-        )
-        
-        # ログイン済みユーザーの場合、お気に入り状態も一緒に取得
+        """一覧用QuerySetに集計と関連データを事前付与し、人気順(お気に入り数降順)で返す。"""
+        qs = (Shop.objects
+              .all()
+              .prefetch_related('images', 'categories__category'))
+        # お気に入り数（人気度）
+        qs = qs.annotate(favorite_count=Count('favorites'))
+        # ログインユーザーのお気に入り状態
         if self.request.user.is_authenticated:
-            user_favorite_subquery = Favorite.objects.filter(
-                shop=OuterRef('pk'),
-                user=self.request.user
-            )
-            queryset = queryset.annotate(
-                is_favorited=Exists(user_favorite_subquery)
-            )
-        
-        return queryset.order_by(self.ordering[0])
-    
+            fav_sub = Favorite.objects.filter(user=self.request.user, shop=OuterRef('pk'))
+            qs = qs.annotate(is_favorited=Exists(fav_sub))
+        # 人気順 -> 同数時はid昇順で安定
+        qs = qs.order_by('-favorite_count', 'id')
+        return qs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # 最適化後：各店舗のデータは既にクエリセットに含まれている
-        shops = context['shops']
+
         shops_with_favorites = []
-        
-        for shop in shops:
-            # prefetchされた画像リストから最初の画像を取得（追加クエリなし）
-            images_list = list(shop.images.all())
-            first_image = images_list[0] if images_list else None
-            image_count = len(images_list)
-            
-            shop_data = {
+        for shop in context['shops']:
+            # annotateで付与済みならそれを利用 / 無ければ従来通りフォールバック（安全）
+            favorite_count = getattr(shop, 'favorite_count', None)
+            if favorite_count is None:
+                favorite_count = shop.favorites.count()
+            if self.request.user.is_authenticated:
+                is_favorited = getattr(shop, 'is_favorited', None)
+                if is_favorited is None:
+                    is_favorited = Favorite.objects.filter(shop=shop, user=self.request.user).exists()
+            else:
+                is_favorited = False
+
+            # カテゴリーはprefetch済み。未prefetch環境でも同じ書き方で動作
+            # prefetch_related済み: shop.categories.all() で追加クエリを出さない
+            categories_qs = shop.categories.all()  # through(ShopCategory) + category はprefetch済み
+
+            shops_with_favorites.append({
                 'shop': shop,
-                'is_favorited': getattr(shop, 'is_favorited', False) if self.request.user.is_authenticated else False,
-                'favorite_count': shop.favorite_count,  # annotateされた値を使用
-                'categories': shop.categories.all(),  # prefetchされたデータを使用
-                'first_image': first_image,  # 最初の画像を事前計算
-                'image_count': image_count,  # 画像数を事前計算
-                'has_images': image_count > 0,  # 画像存在フラグ
-            }
-            shops_with_favorites.append(shop_data)
-        
+                'is_favorited': is_favorited,
+                'favorite_count': favorite_count,
+                'categories': categories_qs,
+            })
+
         context['shops_with_favorites'] = shops_with_favorites
         return context
 
@@ -85,18 +82,6 @@ class ShopDetailView(DetailView):
         get_token(request)
         return super().dispatch(request, *args, **kwargs)
     
-    def get_queryset(self):
-        """関連データを一度で取得してN+1クエリを防ぐ"""
-        return Shop.objects.select_related().prefetch_related(
-            'images',
-            Prefetch('categories', queryset=ShopCategory.objects.select_related('category')),
-            Prefetch('reviews', queryset=Review.objects.select_related('user').order_by('-created_at'))
-        ).annotate(
-            favorite_count=Count('favorites', distinct=True),
-            review_count=Count('reviews', distinct=True),
-            avg_rating=Avg('reviews__rating')
-        )
-    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         shop = self.get_object()
@@ -110,31 +95,25 @@ class ShopDetailView(DetailView):
         else:
             context['is_favorited'] = False
             
-        # annotateされた値を使用（個別クエリを避ける）
-        context['favorite_count'] = shop.favorite_count
+        # お気に入り数を追加
+        context['favorite_count'] = shop.favorites.count()
         
-        # 店舗のカテゴリー情報（prefetchされたデータを使用）
-        context['shop_categories'] = shop.categories.all()
+        # 店舗のカテゴリー情報を追加
+        context['shop_categories'] = shop.categories.select_related('category')
         
-        # レビュー関連の情報（prefetchされたデータを使用）
-        reviews = shop.reviews.all()  # 既にorder_byされている
+        # レビュー関連の情報を追加
+        reviews = shop.reviews.select_related('user').order_by('-created_at')
         context['reviews'] = reviews
-        context['review_count'] = shop.review_count  # annotateされた値を使用
+        context['review_count'] = reviews.count()
         
-        # 平均評価を計算（annotateされた値を使用）
-        avg_rating = shop.avg_rating
+        # 平均評価を計算
+        avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
         context['avg_rating'] = round(avg_rating, 1) if avg_rating else 0
         context['avg_rating_int'] = int(avg_rating) if avg_rating else 0
         
         # ログイン済みユーザーの既存レビューをチェック
         if self.request.user.is_authenticated:
-            # prefetchされたレビューから検索（追加クエリなし）
-            user_review = None
-            for review in reviews:
-                if review.user_id == self.request.user.id:
-                    user_review = review
-                    break
-            context['user_review'] = user_review
+            context['user_review'] = shop.reviews.select_related('user').filter(user=self.request.user).first()
         else:
             context['user_review'] = None
 
@@ -165,47 +144,31 @@ class ShopSearchView(ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        # GETパラメーターから検索キーワードqを取得
+        # GETパラメーターから検索キーワード/カテゴリー
         query = self.request.GET.get('q')
         category_id = self.request.GET.get('category')
 
-        # 検索条件の準備 - N+1クエリを防ぐため必要なデータを一度で取得
-        queryset = Shop.objects.select_related().prefetch_related(
-            'images',
-            Prefetch('categories', queryset=ShopCategory.objects.select_related('category'))
-        ).annotate(
-            favorite_count=Count('favorites', distinct=True)
-        )
+        qs = Shop.objects.all().prefetch_related('images', 'categories__category')
 
-        # ログイン済みユーザーの場合、お気に入り状態も一緒に取得
-        if self.request.user.is_authenticated:
-            user_favorite_subquery = Favorite.objects.filter(
-                shop=OuterRef('pk'),
-                user=self.request.user
-            )
-            queryset = queryset.annotate(
-                is_favorited=Exists(user_favorite_subquery)
-            )
-
-        # カテゴリー検索の場合
         if category_id:
-            queryset = queryset.filter(categories__category_id=category_id).distinct()
-        
-        # キーワード検索の場合
+            qs = qs.filter(categories__category_id=category_id)
         elif query and query.strip():
-            query = query.strip()
-            queryset = queryset.filter(
-                Q(name__icontains=query) |
-                Q(address__icontains=query) |
-                Q(phone_number__icontains=query) |
-                Q(categories__category__name__icontains=query)  # カテゴリー名でも検索
-            ).distinct()
-        else:
-            # 検索条件がない場合は全店舗を表示
-            queryset = queryset.all()
-        
-        # ページネーション警告を解決するために順序を確実に指定
-        return queryset.order_by('id')
+            q = query.strip()
+            qs = qs.filter(
+                Q(name__icontains=q) |
+                Q(address__icontains=q) |
+                Q(phone_number__icontains=q) |
+                Q(categories__category__name__icontains=q)
+            )
+
+        qs = qs.order_by('id').distinct()
+
+        # 共通最適化: お気に入り数 & ログイン済み判定
+        qs = qs.annotate(favorite_count=Count('favorites'))
+        if self.request.user.is_authenticated:
+            fav_sub = Favorite.objects.filter(user=self.request.user, shop=OuterRef('pk'))
+            qs = qs.annotate(is_favorited=Exists(fav_sub))
+        return qs
 
     def get_context_data(self, **kwargs):
         # 親クラスのコンテキストを取得
@@ -228,27 +191,24 @@ class ShopSearchView(ListView):
         result_count = self.get_queryset().count()
         context['result_count'] = result_count
 
-        # 最適化後：各店舗のデータは既にクエリセットに含まれている
-        shops = context['shops']
+        # お気に入り/カテゴリー情報（annotate + prefetch フォールバック対応）
         shops_with_favorites = []
-        
-        for shop in shops:
-            # prefetchされた画像リストから最初の画像を取得（追加クエリなし）
-            images_list = list(shop.images.all())
-            first_image = images_list[0] if images_list else None
-            image_count = len(images_list)
-            
-            shop_data = {
+        for shop in context['shops']:
+            favorite_count = getattr(shop, 'favorite_count', None)
+            if favorite_count is None:
+                favorite_count = shop.favorites.count()
+            if self.request.user.is_authenticated:
+                is_favorited = getattr(shop, 'is_favorited', None)
+                if is_favorited is None:
+                    is_favorited = Favorite.objects.filter(shop=shop, user=self.request.user).exists()
+            else:
+                is_favorited = False
+            shops_with_favorites.append({
                 'shop': shop,
-                'is_favorited': getattr(shop, 'is_favorited', False) if self.request.user.is_authenticated else False,
-                'favorite_count': shop.favorite_count,  # annotateされた値を使用
-                'categories': shop.categories.all(),  # prefetchされたデータを使用
-                'first_image': first_image,  # 最初の画像を事前計算
-                'image_count': image_count,  # 画像数を事前計算
-                'has_images': image_count > 0,  # 画像存在フラグ
-            }
-            shops_with_favorites.append(shop_data)
-        
+                'is_favorited': is_favorited,
+                'favorite_count': favorite_count,
+                'categories': shop.categories.all()
+            })
         context['shops_with_favorites'] = shops_with_favorites
 
         return context
@@ -451,38 +411,43 @@ def toggle_favorite(request, shop_id):
         }, status=500)
 
 def load_more_shops(request):
-    """追加の店舗データを読み込むAJAXエンドポイント"""
+    """追加の店舗データを読み込むAJAXエンドポイント (N+1最適化版)"""
     print(f"load_more_shops called with request: {request.method}")
     print(f"GET params: {request.GET}")
-    
     try:
         offset = int(request.GET.get('offset', 0))
         limit = 10
         print(f"Offset: {offset}, Limit: {limit}")
-        
-        shops = Shop.objects.all()[offset:offset + limit]
+
+        base_qs = (Shop.objects
+                    .all()
+                    .order_by('id')
+                    .prefetch_related('images'))
+        # 集計
+        base_qs = base_qs.annotate(favorite_count=Count('favorites'))
+        if request.user.is_authenticated:
+            fav_sub = Favorite.objects.filter(user=request.user, shop=OuterRef('pk'))
+            base_qs = base_qs.annotate(is_favorited=Exists(fav_sub))
+
+        shops = list(base_qs[offset:offset + limit])
         print(f"Found {len(shops)} shops")
+
         shops_data = []
-        
         for shop in shops:
-            # お気に入り状態とカウントを取得
-            is_favorited = False
+            favorite_count = getattr(shop, 'favorite_count', shop.favorites.count())
             if request.user.is_authenticated:
-                is_favorited = Favorite.objects.filter(
-                    shop=shop,
-                    user=request.user
-                ).exists()
-            
-            favorite_count = shop.favorites.count()
-            
-            # 画像URLを取得
+                is_favorited = getattr(shop, 'is_favorited', Favorite.objects.filter(shop=shop, user=request.user).exists())
+            else:
+                is_favorited = False
+
+            # 画像（prefetch済み）
+            images = list(shop.images.all())
             image_url = ''
-            if shop.images.exists():
-                image_url = shop.images.first().image.url
-                # Heroku用: メディアURLを静的ファイルURLに変換
+            if images:
+                image_url = images[0].image.url
                 if image_url.startswith('/media/'):
                     image_url = image_url.replace('/media/', '/static/')
-            
+
             shops_data.append({
                 'id': shop.pk,
                 'name': shop.name,
@@ -492,25 +457,20 @@ def load_more_shops(request):
                 'is_favorited': is_favorited,
                 'favorite_count': favorite_count,
             })
-        
-        has_more = Shop.objects.count() > offset + limit
-        
+
+        total_count = Shop.objects.count()
+        has_more = total_count > offset + limit
         response_data = {
             'success': True,
             'shops': shops_data,
             'has_more': has_more,
-            'total_count': Shop.objects.count()
+            'total_count': total_count,
         }
         print(f"Returning response: {response_data}")
-        
         return JsonResponse(response_data)
-        
     except Exception as e:
         print(f"Error in load_more_shops: {e}")
-        return JsonResponse({
-            'success': False,
-            'message': 'データの読み込みに失敗しました。'
-        }, status=500)
+        return JsonResponse({'success': False, 'message': 'データの読み込みに失敗しました。'}, status=500)
 
 @login_required
 @subscription_required

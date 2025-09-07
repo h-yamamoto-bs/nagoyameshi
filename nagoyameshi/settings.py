@@ -70,7 +70,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'nagoyameshi.middleware.QueryLogMiddleware',  # DBクエリ監視用
 ]
 
 ROOT_URLCONF = 'nagoyameshi.urls'
@@ -274,3 +273,23 @@ MY_URL = env.str('MY_URL')
 
 # Stripeの価格ID
 STRIPE_PRICE_ID = env.str('STRIPE_PRICE_ID')
+
+# ==============================
+# メール設定 (パスワードリセット用)
+# ==============================
+# 開発: コンソール出力 / 本番: 環境変数で上書き
+EMAIL_BACKEND = env.str('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='no-reply@nagoyameshi.local')
+
+# SMTP利用時 (存在するものだけ設定)
+EMAIL_HOST = env.str('EMAIL_HOST', default='')
+if EMAIL_HOST:
+    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
+    EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', default=30)
+
+# パスワードリセットトークン有効期限 (秒) - 3日 (デフォルトは1日)
+from datetime import timedelta
+PASSWORD_RESET_TIMEOUT = env.int('PASSWORD_RESET_TIMEOUT', default=60*60*24*3)

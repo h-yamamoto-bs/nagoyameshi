@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from .models import User, Subscription
-from shops.models import Favorite, Review, ShopCategory
+from shops.models import Favorite, Review
 from django.views.generic import ListView, TemplateView, View
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -18,7 +18,7 @@ from django.utils.decorators import method_decorator
 import urllib.parse
 from datetime import datetime, timezone
 from .utils import sync_subscription_from_stripe
-from django.db.models import Count, Prefetch
+from django.views.generic import TemplateView
 
 # ユーザー一覧
 class AccountListView(ListView):
@@ -169,18 +169,13 @@ class MyPageView(LoginRequiredMixin, TemplateView):
             except Exception:
                 pass
         
-        # お気に入り一覧の取得（最新5件）- レビュー数も一緒に取得してN+1を防ぐ
-        favorites = Favorite.objects.filter(user=user).select_related('shop').prefetch_related(
-            'shop__images',
-            Prefetch('shop__categories', queryset=ShopCategory.objects.select_related('category'))
-        ).annotate(
-            shop_review_count=Count('shop__reviews', distinct=True)
-        ).order_by('-id')[:5]
+        # お気に入り一覧の取得（最新5件）
+        favorites = Favorite.objects.filter(user=user).select_related('shop').order_by('-id')[:5]
         
         # レビュー一覧の取得（最新5件）
         reviews = Review.objects.filter(user=user).select_related('shop').order_by('-created_at')[:5]
         
-        # 統計情報（一度のクエリで取得）
+        # 統計情報
         favorite_count = Favorite.objects.filter(user=user).count()
         review_count = Review.objects.filter(user=user).count()
         
@@ -601,3 +596,67 @@ class PayWithStripeView(View):
             return JsonResponse({'success': True, 'id': session.id, 'checkout_url': getattr(session, 'url', None)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ================================
+# シンプルパスワード再設定 (メール送信無し)
+# 1) email入力 -> 存在すればセッションに記録し確認ページへ
+# 2) 新パスワード入力 -> 更新
+# セキュリティ注意: 本番では必ずメール/多要素確認推奨。
+# ================================
+class SimplePasswordResetStartView(TemplateView):
+    template_name = 'accounts/password_reset_request.html'
+
+    def post(self, request, *args, **kwargs):
+        email = request.POST.get('email', '').strip()
+        if not email:
+            messages.error(request, 'メールアドレスを入力してください。', extra_tags='auth')
+            return redirect('accounts:password_reset')
+        try:
+            user = User.objects.get(email__iexact=email, is_active=True)
+        except User.DoesNotExist:
+            messages.error(request, 'このメールアドレスは登録されていません。', extra_tags='auth')
+            return redirect('accounts:password_reset')
+        # セッションに対象ユーザーIDを保存（5分程度の有効期限をコメントで注意喚起）
+        request.session['pw_reset_user_id'] = user.id
+        messages.info(request, 'パスワード再設定ページへ進んでください。', extra_tags='auth')
+        return redirect('accounts:password_reset_confirm')
+
+
+class SimplePasswordResetConfirmView(TemplateView):
+    template_name = 'accounts/password_reset_confirm.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.session.get('pw_reset_user_id'):
+            messages.error(request, '再設定を最初からやり直してください。', extra_tags='auth')
+            return redirect('accounts:password_reset')
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.session.get('pw_reset_user_id')
+        if not user_id:
+            messages.error(request, 'セッションが無効です。最初からやり直してください。', extra_tags='auth')
+            return redirect('accounts:password_reset')
+        pw1 = request.POST.get('new_password1', '')
+        pw2 = request.POST.get('new_password2', '')
+        if not pw1 or not pw2:
+            messages.error(request, 'すべてのフィールドを入力してください。', extra_tags='auth')
+            return redirect('accounts:password_reset_confirm')
+        if pw1 != pw2:
+            messages.error(request, 'パスワードが一致しません。', extra_tags='auth')
+            return redirect('accounts:password_reset_confirm')
+        # 最低文字数等はDjangoのvalidatorを手動適用可能（簡易化）
+        if len(pw1) < 8:
+            messages.error(request, 'パスワードは8文字以上にしてください。', extra_tags='auth')
+            return redirect('accounts:password_reset_confirm')
+        try:
+            user = User.objects.get(id=user_id, is_active=True)
+        except User.DoesNotExist:
+            messages.error(request, 'ユーザーが見つかりません。やり直してください。', extra_tags='auth')
+            return redirect('accounts:password_reset')
+        user.set_password(pw1)
+        user.save()
+        # セッション消去
+        request.session.pop('pw_reset_user_id', None)
+        messages.success(request, 'パスワードを更新しました。ログインしてください。', extra_tags='auth')
+        return redirect('accounts:login')

@@ -18,4 +18,7 @@ urlpatterns = [
     path('pay/cancel/', views.PayCancelView.as_view(), name='pay_cancel'),
     path('subscription/portal/', views.StripeBillingPortalView.as_view(), name='subscription_portal'),
     path('stripe/webhook/', stripe_webhook, name='stripe_webhook'),
+    # シンプルパスワード再設定（メール送信なし）
+    path('password/reset/', views.SimplePasswordResetStartView.as_view(), name='password_reset'),
+    path('password/reset/confirm/', views.SimplePasswordResetConfirmView.as_view(), name='password_reset_confirm'),
 ]
