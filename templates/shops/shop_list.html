@@ -45,9 +45,9 @@
                     <!-- 画像ギャラリー -->
                     <!-- =================================== -->
                     <div class="shop-gallery">
-                                                    {% if shop_data.shop.images.exists %}
+                        {% if shop_data.has_images %}
                             <div class="image-main">
-                                <img src="{{ shop_data.shop.images.first.image.url|heroku_media_url }}" 
+                                <img src="{{ shop_data.first_image.image.url|heroku_media_url }}" 
                                      alt="{{ shop_data.shop.name }}"
                                      class="main-image">
                                 <div class="image-overlay">
@@ -55,17 +55,17 @@
                                 </div>
                             </div>
                             
-                                                            {% if shop_data.shop.images.count > 1 %}
+                            {% if shop_data.image_count > 1 %}
                                 <div class="image-thumbnails">
-                                                                            {% for image in shop_data.shop.images.all|slice:"1:5" %}
+                                    {% for image in shop_data.shop.images.all|slice:"1:5" %}
                                         <div class="thumbnail">
                                             <img src="{{ image.image.url|heroku_media_url }}" alt="{{ shop_data.shop.name }}">
                                         </div>
                                     {% endfor %}
                                     
-                                                                            {% if shop_data.shop.images.count > 4 %}
+                                    {% if shop_data.image_count > 4 %}
                                         <div class="thumbnail more-photos">
-                                            <span>+{{ shop_data.shop.images.count|add:"-4" }}</span>
+                                            <span>+{{ shop_data.image_count|add:"-4" }}</span>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -78,15 +78,12 @@
                         {% endif %}
                         
                         <!-- 画像数バッジ -->
-                        {% if shop.images.count > 0 %}
+                        {% if shop_data.image_count > 0 %}
                             <div class="image-count-badge">
                                 <i data-feather="camera"></i>
-                                <span>{{ shop_data.shop.images.count }}</span>
+                                <span>{{ shop_data.image_count }}</span>
                             </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- =================================== -->
+                        {% endif %}                    <!-- =================================== -->
                     <!-- ショップ情報 -->
                     <!-- =================================== -->
                     <div class="shop-content">

@@ -55,11 +55,19 @@ class ShopListView(ListView):
         shops_with_favorites = []
         
         for shop in shops:
+            # prefetchされた画像リストから最初の画像を取得（追加クエリなし）
+            images_list = list(shop.images.all())
+            first_image = images_list[0] if images_list else None
+            image_count = len(images_list)
+            
             shop_data = {
                 'shop': shop,
                 'is_favorited': getattr(shop, 'is_favorited', False) if self.request.user.is_authenticated else False,
                 'favorite_count': shop.favorite_count,  # annotateされた値を使用
-                'categories': shop.categories.all()  # prefetchされたデータを使用
+                'categories': shop.categories.all(),  # prefetchされたデータを使用
+                'first_image': first_image,  # 最初の画像を事前計算
+                'image_count': image_count,  # 画像数を事前計算
+                'has_images': image_count > 0,  # 画像存在フラグ
             }
             shops_with_favorites.append(shop_data)
         
@@ -225,11 +233,19 @@ class ShopSearchView(ListView):
         shops_with_favorites = []
         
         for shop in shops:
+            # prefetchされた画像リストから最初の画像を取得（追加クエリなし）
+            images_list = list(shop.images.all())
+            first_image = images_list[0] if images_list else None
+            image_count = len(images_list)
+            
             shop_data = {
                 'shop': shop,
                 'is_favorited': getattr(shop, 'is_favorited', False) if self.request.user.is_authenticated else False,
                 'favorite_count': shop.favorite_count,  # annotateされた値を使用
-                'categories': shop.categories.all()  # prefetchされたデータを使用
+                'categories': shop.categories.all(),  # prefetchされたデータを使用
+                'first_image': first_image,  # 最初の画像を事前計算
+                'image_count': image_count,  # 画像数を事前計算
+                'has_images': image_count > 0,  # 画像存在フラグ
             }
             shops_with_favorites.append(shop_data)
         
