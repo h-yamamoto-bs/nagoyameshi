@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 
 from accounts.models import User
-from shops.models import Shop, Category
+from shops.models import Shop, Category, ShopCategory
 from .models import CompanyInfo
 
 
@@ -200,11 +200,27 @@ class ShopCreateView(AdminRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['title'] = '店舗登録'
         context['categories'] = Category.objects.all()
+        context['selected_categories'] = []  # 新規作成時は空
         return context
     
     def form_valid(self, form):
-        messages.success(self.request, '店舗を登録しました。')
-        return super().form_valid(form)
+        # 店舗の基本情報を保存
+        response = super().form_valid(form)
+        
+        # カテゴリの処理
+        shop = form.instance
+        category_ids = self.request.POST.getlist('categories')  # チェックボックスから選択されたカテゴリIDのリスト
+        
+        # カテゴリ関連を作成
+        for category_id in category_ids:
+            try:
+                category = Category.objects.get(id=category_id)
+                ShopCategory.objects.create(shop=shop, category=category)
+            except Category.DoesNotExist:
+                continue
+        
+        messages.success(self.request, '店舗とカテゴリを登録しました。')
+        return response
 
 
 class ShopEditView(AdminRequiredMixin, UpdateView):
@@ -218,11 +234,35 @@ class ShopEditView(AdminRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['title'] = '店舗編集'
         context['categories'] = Category.objects.all()
+        
+        # 現在選択されているカテゴリを取得
+        shop = self.get_object()
+        selected_categories = [sc.category.id for sc in shop.categories.select_related('category')]
+        context['selected_categories'] = selected_categories
+        
         return context
     
     def form_valid(self, form):
-        messages.success(self.request, '店舗情報を更新しました。')
-        return super().form_valid(form)
+        # 店舗の基本情報を保存
+        response = super().form_valid(form)
+        
+        # カテゴリの処理
+        shop = form.instance
+        category_ids = self.request.POST.getlist('categories')  # チェックボックスから選択されたカテゴリIDのリスト
+        
+        # 既存のカテゴリ関連を削除
+        shop.categories.all().delete()
+        
+        # 新しいカテゴリ関連を作成
+        for category_id in category_ids:
+            try:
+                category = Category.objects.get(id=category_id)
+                ShopCategory.objects.create(shop=shop, category=category)
+            except Category.DoesNotExist:
+                continue
+        
+        messages.success(self.request, '店舗情報とカテゴリを更新しました。')
+        return response
 
 
 class ShopDetailView(AdminRequiredMixin, DetailView):

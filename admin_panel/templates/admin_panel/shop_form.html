@@ -79,7 +79,7 @@
                             <div class="col-md-4 mb-2">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="categories" value="{{ category.id }}" id="cat{{ category.id }}"
-                                           {% if object and category in object.categories.all %}checked{% endif %}>
+                                           {% if category.id in selected_categories %}checked{% endif %}>
                                     <label class="form-check-label" for="cat{{ category.id }}">
                                         {{ category.name }}
                                     </label>
@@ -87,6 +87,7 @@
                             </div>
                             {% endfor %}
                         </div>
+                        <small class="form-text text-muted">店舗に適用するカテゴリを選択してください</small>
                     </div>
                     {% endif %}
                     
