@@ -161,9 +161,9 @@
                                         {% if user.manager_flag %}
                                             <span class="badge bg-danger subscription-badge">管理者</span>
                                         {% endif %}
-                                        {% if user.subscription_set.exists %}
+                                        {% if user.subscription and user.subscription.is_active %}
                                             <span class="badge bg-success subscription-badge">有料会員</span>
-                                        {% else %}
+                                        {% elif not user.manager_flag %}
                                             <span class="badge bg-secondary subscription-badge">無料会員</span>
                                         {% endif %}
                                     </div>
@@ -190,7 +190,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span class="badge bg-info">{{ user.history_set.count }}</span>
+                            <span class="badge bg-info">{{ user.histories.count }}</span>
                         </td>
                         <td>
                             <div class="btn-group" role="group">

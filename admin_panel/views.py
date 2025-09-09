@@ -374,7 +374,8 @@ class UserListView(AdminRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = User.objects.all()
+        # サブスクリプション情報を効率的に取得するためにselect_relatedを使用
+        queryset = User.objects.select_related('subscription').prefetch_related('histories')
         
         # 検索フィルター（emailのみ）
         search = self.request.GET.get('search')
@@ -398,12 +399,16 @@ class UserListView(AdminRequiredMixin, ListView):
         # サブスクリプションテーブルがある場合の有料会員数
         try:
             from accounts.models import Subscription
-            context['subscribed_users'] = User.objects.filter(
-                manager_flag=False, 
-                subscription__isnull=False,
-                subscription__is_active=True
-            ).distinct().count()
-        except:
+            subscribed_count = Subscription.objects.filter(is_active=True).count()
+            context['subscribed_users'] = subscribed_count
+            
+            # デバッグ情報
+            print(f"Debug: Total users: {User.objects.count()}")
+            print(f"Debug: Subscriptions: {Subscription.objects.count()}")
+            print(f"Debug: Active subscriptions: {subscribed_count}")
+            
+        except Exception as e:
+            print(f"Subscription count error: {e}")
             context['subscribed_users'] = 0
         
         # 新規ユーザー数（今月） - date_joinedがないので0に設定
