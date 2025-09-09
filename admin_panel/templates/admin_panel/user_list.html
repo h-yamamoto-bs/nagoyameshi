@@ -160,11 +160,16 @@
                                     <div class="mt-1">
                                         {% if user.manager_flag %}
                                             <span class="badge bg-danger subscription-badge">管理者</span>
-                                        {% endif %}
-                                        {% if user.subscription and user.subscription.is_active %}
-                                            <span class="badge bg-success subscription-badge">有料会員</span>
-                                        {% elif not user.manager_flag %}
-                                            <span class="badge bg-secondary subscription-badge">無料会員</span>
+                                        {% else %}
+                                            {% if user.subscription %}
+                                                {% if user.subscription.is_active %}
+                                                    <span class="badge bg-success subscription-badge">有料会員</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning subscription-badge">非アクティブ有料会員</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-secondary subscription-badge">無料会員</span>
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>
