@@ -22,8 +22,9 @@ class RequestOptimizationMiddleware:
             response['Cache-Control'] = 'public, max-age=86400'  # 24時間キャッシュ
             return response
             
-        # 重複リクエストの防止（同じユーザーから同じパスへの連続リクエスト）
-        if request.user.is_authenticated:
+        # 重複リクエストの防止（認証後のユーザーのみ）
+        # hasattrでrequest.userの存在確認をしてからアクセス
+        if hasattr(request, 'user') and request.user.is_authenticated:
             cache_key = f"user_request_{request.user.id}_{request.path}"
             last_request_time = cache.get(cache_key)
             
