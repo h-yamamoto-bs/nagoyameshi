@@ -45,27 +45,11 @@
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">レビュー数</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ review_count }}</div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">カテゴリ数</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ category_count }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-star fa-2x text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">過去30日の予約人数</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ recent_reservations }}</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        <i class="fas fa-tags fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -121,9 +105,6 @@
 }
 .border-left-info {
     border-left: 4px solid #36b9cc !important;
-}
-.border-left-warning {
-    border-left: 4px solid #f6c23e !important;
 }
 </style>
 {% endblock %}

@@ -13,6 +13,7 @@ urlpatterns = [
     path('profile/update/', views.update_profile, name='update_profile'),
     path('subscription/update/', views.update_subscription, name='update_subscription'),
     path('subscription/cancel/', views.cancel_subscription, name='cancel_subscription'),
+    path('reservation/cancel/', views.cancel_reservation, name='cancel_reservation'),
     path('pay/', views.PayWithStripeView.as_view(), name='pay_with_stripe'),
     path('pay/success/', views.PaySuccessView.as_view(), name='pay_success'),
     path('pay/cancel/', views.PayCancelView.as_view(), name='pay_cancel'),

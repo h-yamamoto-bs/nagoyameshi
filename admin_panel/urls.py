@@ -37,13 +37,4 @@ urlpatterns = [
     path('categories/create/', views.CategoryCreateView.as_view(), name='category_create'),
     path('categories/<int:pk>/edit/', views.CategoryEditView.as_view(), name='category_edit'),
     path('categories/<int:pk>/delete/', views.CategoryDeleteView.as_view(), name='category_delete'),
-    
-    # レビュー管理
-    path('reviews/', views.ReviewListView.as_view(), name='review_list'),
-    path('reviews/<int:pk>/toggle/', views.toggle_review_visibility, name='toggle_review_visibility'),
-    path('reviews/<int:pk>/delete/', views.delete_review, name='delete_review'),
-    path('ajax-test/', views.ajax_test, name='ajax_test'),
-    
-    # 売上管理
-    path('sales/', views.SalesListView.as_view(), name='sales_list'),
 ]

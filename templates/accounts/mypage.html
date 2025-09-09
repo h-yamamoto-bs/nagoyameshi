@@ -311,6 +311,86 @@
                 {% endif %}
             </div>
 
+            <!-- 予約一覧（有料会員のみ） -->
+            {% if subscription and subscription.is_active %}
+            <div class="info-card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i data-feather="calendar"></i>
+                        予約一覧
+                        <span class="count-badge">{{ reservation_count }}</span>
+                    </h3>
+                    {% if reservations %}
+                        <a href="#" class="btn-view-all">
+                            <i data-feather="external-link"></i>
+                            すべて表示
+                        </a>
+                    {% endif %}
+                </div>
+                {% if reservations %}
+                    <div class="list-items">
+                        {% for reservation in reservations %}
+                            <div class="list-item reservation-item" data-reservation-id="{{ reservation.id }}">
+                                <div class="item-info">
+                                    <h4 class="item-title">
+                                        <a href="{% url 'shops:shop_detail' reservation.shop.id %}">
+                                            {{ reservation.shop.name }}
+                                        </a>
+                                    </h4>
+                                    <p class="item-description">
+                                        {{ reservation.shop.address }}
+                                    </p>
+                                    <div class="reservation-details">
+                                        <div class="detail-row">
+                                            <span class="detail-label">
+                                                <i data-feather="calendar"></i>
+                                                予約日時
+                                            </span>
+                                            <span class="detail-value">{{ reservation.date|date:"Y年n月j日" }}</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">
+                                                <i data-feather="users"></i>
+                                                人数
+                                            </span>
+                                            <span class="detail-value">{{ reservation.number_of_people }}名</span>
+                                        </div>
+                                        <div class="detail-row">
+                                            <span class="detail-label">
+                                                <i data-feather="clock"></i>
+                                                予約作成
+                                            </span>
+                                            <span class="detail-value">{{ reservation.created_at|date:"Y年n月j日 H:i" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="reservation-actions">
+                                    {% if reservation.date >= today %}
+                                        <button type="button" class="btn-action btn-cancel" onclick="cancelReservation({{ reservation.id }}, '{{ reservation.shop.name|escapejs }}', '{{ reservation.date|date:"Y年n月j日" }}')">
+                                            <i data-feather="x-circle"></i>
+                                            キャンセル
+                                        </button>
+                                    {% else %}
+                                        <span class="reservation-status past">
+                                            <i data-feather="check-circle"></i>
+                                            完了
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-items">
+                        <div class="no-items-icon">
+                            <i data-feather="calendar"></i>
+                        </div>
+                        <p class="no-items-text">予約がありません</p>
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <!-- レビュー一覧 -->
             <div class="info-card">
                 <div class="card-header">
@@ -355,6 +435,16 @@
                                             <i data-feather="calendar"></i>
                                             {{ review.created_at|date:"Y年n月j日" }}
                                         </span>
+                                    </div>
+                                    <div class="review-actions">
+                                        <button type="button" class="btn-action btn-edit" onclick="openEditReviewModal({{ review.id }}, {{ review.rating }}, '{{ review.comment|escapejs }}', '{{ review.shop.name|escapejs }}')">
+                                            <i data-feather="edit-2"></i>
+                                            編集
+                                        </button>
+                                        <button type="button" class="btn-action btn-delete" onclick="confirmDeleteReview({{ review.id }}, '{{ review.shop.name|escapejs }}')">
+                                            <i data-feather="trash-2"></i>
+                                            削除
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -523,6 +613,81 @@
                 <button type="submit" form="subscriptionForm" class="btn-submit" id="submitSubscriptionBtn">
                     <i data-feather="save"></i>
                     保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================== -->
+    <!-- レビュー編集モーダル -->
+    <!-- =================================== -->
+    <div id="editReviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i data-feather="edit"></i>
+                    レビューを編集
+                </h3>
+                <button class="modal-close" onclick="closeEditReviewModal()">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="editReviewForm" class="edit-form">
+                    {% csrf_token %}
+                    <input type="hidden" id="editReviewId" name="review_id">
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i data-feather="map-pin"></i>
+                            店舗名
+                        </label>
+                        <div class="shop-name-display" id="editShopName"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label required">
+                            <i data-feather="star"></i>
+                            評価
+                        </label>
+                        <div class="star-rating-edit">
+                            <input type="radio" id="editStar5" name="rating" value="5">
+                            <label for="editStar5" class="star-label">★</label>
+                            <input type="radio" id="editStar4" name="rating" value="4">
+                            <label for="editStar4" class="star-label">★</label>
+                            <input type="radio" id="editStar3" name="rating" value="3">
+                            <label for="editStar3" class="star-label">★</label>
+                            <input type="radio" id="editStar2" name="rating" value="2">
+                            <label for="editStar2" class="star-label">★</label>
+                            <input type="radio" id="editStar1" name="rating" value="1">
+                            <label for="editStar1" class="star-label">★</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editComment" class="form-label">
+                            <i data-feather="message-circle"></i>
+                            コメント
+                        </label>
+                        <textarea 
+                            id="editComment" 
+                            name="comment" 
+                            class="form-textarea"
+                            rows="4"
+                            placeholder="このお店の感想をお聞かせください..."></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeEditReviewModal()">
+                    <i data-feather="x"></i>
+                    キャンセル
+                </button>
+                <button type="submit" form="editReviewForm" class="btn-submit" id="submitEditReviewBtn">
+                    <i data-feather="save"></i>
+                    更新
                 </button>
             </div>
         </div>
@@ -1298,6 +1463,42 @@
     box-shadow: none;
 }
 
+/* 星評価編集用スタイル */
+.star-rating-edit {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 0.25rem;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.star-rating-edit input[type="radio"] {
+    display: none;
+}
+
+.star-rating-edit .star-label {
+    font-size: 1.5rem;
+    color: var(--gray-300);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.star-rating-edit input[type="radio"]:checked ~ .star-label,
+.star-rating-edit .star-label:hover,
+.star-rating-edit .star-label:hover ~ .star-label {
+    color: #fbbf24;
+}
+
+.shop-name-display {
+    padding: 0.75rem 1rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 0.5rem;
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
 .btn-cancel i,
 .btn-submit i {
     width: 1rem;
@@ -1417,6 +1618,57 @@
 .meta-item i {
     width: 0.75rem;
     height: 0.75rem;
+}
+
+/* レビューアクションボタン */
+.review-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-action i {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.btn-edit {
+    background: var(--blue-50);
+    border-color: var(--blue-200);
+    color: var(--blue-600);
+}
+
+.btn-edit:hover {
+    background: var(--blue-100);
+    border-color: var(--blue-300);
+    color: var(--blue-700);
+}
+
+.btn-delete {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+    border-color: #f87171;
+    color: #b91c1c;
 }
 
 .item-actions {
@@ -1898,6 +2150,176 @@ function removeFavorite(shopId) {
         } else {
             alert(data.message || 'この操作は会員限定です。マイページで契約をご検討ください。');
             if (data.redirect_url) window.location.href = data.redirect_url;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('ネットワークエラーが発生しました。');
+    });
+}
+
+// =================================== //
+// レビュー編集・削除関連の関数
+// =================================== //
+
+function openEditReviewModal(reviewId, rating, comment, shopName) {
+    const modal = document.getElementById('editReviewModal');
+    
+    // フォームに値をセット
+    document.getElementById('editReviewId').value = reviewId;
+    document.getElementById('editShopName').textContent = shopName;
+    document.getElementById('editComment').value = comment;
+    
+    // 評価の星をセット
+    const ratingRadio = document.querySelector(`input[name="rating"][value="${rating}"]`);
+    if (ratingRadio) {
+        ratingRadio.checked = true;
+    }
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditReviewModal() {
+    const modal = document.getElementById('editReviewModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+    
+    // フォームをリセット
+    document.getElementById('editReviewForm').reset();
+}
+
+function confirmDeleteReview(reviewId, shopName) {
+    if (confirm(`${shopName}のレビューを削除してもよろしいですか？\n\nこの操作は取り消せません。`)) {
+        deleteReview(reviewId);
+    }
+}
+
+function deleteReview(reviewId) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch(`{% url 'shops:delete_review' 0 %}`.replace('0', reviewId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(async (response) => {
+        const text = await response.text();
+        try { 
+            return JSON.parse(text); 
+        } catch { 
+            return { 
+                success: false, 
+                message: 'サーバー応答の解析に失敗しました。', 
+                raw: text 
+            }; 
+        }
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'レビューの削除に失敗しました。');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('ネットワークエラーが発生しました。');
+    });
+}
+
+// レビュー編集フォームの送信処理
+document.addEventListener('DOMContentLoaded', function() {
+    const editReviewForm = document.getElementById('editReviewForm');
+    if (editReviewForm) {
+        editReviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const reviewId = document.getElementById('editReviewId').value;
+            const csrfToken = formData.get('csrfmiddlewaretoken');
+            
+            // 評価が選択されているかチェック
+            const rating = formData.get('rating');
+            if (!rating) {
+                alert('評価を選択してください。');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitEditReviewBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-feather="loader"></i>更新中...';
+            feather.replace();
+            
+            fetch(`{% url 'shops:edit_review' 0 %}`.replace('0', reviewId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData
+            })
+            .then(async (response) => {
+                const text = await response.text();
+                try { 
+                    return JSON.parse(text); 
+                } catch { 
+                    return { 
+                        success: false, 
+                        message: 'サーバー応答の解析に失敗しました。', 
+                        raw: text 
+                    }; 
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    closeEditReviewModal();
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'レビューの更新に失敗しました。');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('ネットワークエラーが発生しました。');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i data-feather="save"></i>更新';
+                feather.replace();
+            });
+        });
+    }
+});
+
+// 予約キャンセル機能
+function cancelReservation(reservationId, shopName, reservedDate) {
+    if (!confirm(`${shopName}の${reservedDate}の予約をキャンセルしますか？\n\nこの操作は取り消せません。`)) {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    
+    fetch('{% url "accounts:cancel_reservation" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `reservation_id=${reservationId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.error || 'キャンセルに失敗しました。');
         }
     })
     .catch(error => {

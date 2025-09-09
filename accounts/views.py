@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from .models import User, Subscription
-from shops.models import Favorite, Review
+from shops.models import Favorite, Review, History
 from django.views.generic import ListView, TemplateView, View
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
@@ -16,7 +16,7 @@ from django.conf import settings
 import stripe
 from django.utils.decorators import method_decorator
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from .utils import sync_subscription_from_stripe
 from django.views.generic import TemplateView
 from .activation import validate_activation_token, generate_activation_token, send_activation_mail
@@ -188,12 +188,25 @@ class MyPageView(LoginRequiredMixin, TemplateView):
         favorite_count = Favorite.objects.filter(user=user).count()
         review_count = Review.objects.filter(user=user).count()
         
+        # 予約関連データ（プレミアム会員の場合のみ）
+        reservations = []
+        reservation_count = 0
+        today = date.today()
+        
+        if subscription and subscription.is_active:
+            # 予約一覧の取得（最新10件、日付順）
+            reservations = History.objects.filter(user=user).select_related('shop').order_by('-date')[:10]
+            reservation_count = History.objects.filter(user=user).count()
+        
         context.update({
             'subscription': subscription,
             'favorites': favorites,
             'reviews': reviews,
             'favorite_count': favorite_count,
             'review_count': review_count,
+            'reservations': reservations,
+            'reservation_count': reservation_count,
+            'today': today,
         })
         # ここでのみStripe関連のエラーを表示
         err = self.request.GET.get('err')
@@ -731,3 +744,59 @@ class SimplePasswordResetConfirmView(TemplateView):
         request.session.pop('pw_reset_user_id', None)
         messages.success(request, 'パスワードを更新しました。ログインしてください。', extra_tags='auth')
         return redirect('accounts:login')
+
+
+@login_required
+@require_POST
+def cancel_reservation(request):
+    """予約キャンセル"""
+    try:
+        # プレミアム会員のチェック
+        user = request.user
+        subscription = Subscription.objects.filter(user=user, is_active=True).first()
+        
+        if not subscription or not subscription.is_active:
+            return JsonResponse({
+                'success': False, 
+                'error': 'プレミアム会員のみご利用いただけます。'
+            }, status=403)
+        
+        reservation_id = request.POST.get('reservation_id')
+        if not reservation_id:
+            return JsonResponse({
+                'success': False, 
+                'error': '予約IDが無効です。'
+            }, status=400)
+        
+        # 予約の取得と権限確認
+        try:
+            reservation = History.objects.get(id=reservation_id, user=user)
+        except History.DoesNotExist:
+            return JsonResponse({
+                'success': False, 
+                'error': '予約が見つかりません。'
+            }, status=404)
+        
+        # 過去の予約はキャンセルできない
+        today = date.today()
+        if reservation.date < today:
+            return JsonResponse({
+                'success': False, 
+                'error': '過去の予約はキャンセルできません。'
+            }, status=400)
+        
+        # 予約のキャンセル（削除）
+        shop_name = reservation.shop.name
+        reserved_date = reservation.date
+        reservation.delete()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'{shop_name}の{reserved_date}の予約をキャンセルしました。'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': 'キャンセル処理中にエラーが発生しました。'
+        }, status=500)

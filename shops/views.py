@@ -329,6 +329,99 @@ def submit_review(request):
         }, status=500)
 
 
+@login_required
+@subscription_required
+@require_POST
+def edit_review(request, review_id):
+    """レビューの編集"""
+    try:
+        # レビューの取得（自分のレビューのみ）
+        try:
+            review = Review.objects.get(pk=review_id, user=request.user)
+        except Review.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'レビューが見つかりません。'
+            }, status=404)
+
+        # POSTデータの取得
+        rating = request.POST.get('rating')
+        comment = request.POST.get('comment', '')
+
+        # バリデーション
+        if not rating:
+            return JsonResponse({
+                'success': False,
+                'message': '評価を入力してください。'
+            }, status=400)
+
+        # 評価の範囲チェック
+        try:
+            rating = int(rating)
+            if rating < 1 or rating > 5:
+                raise ValueError
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'message': '評価は1-5の範囲で入力してください。'
+            }, status=400)
+
+        # レビューの更新
+        review.rating = rating
+        review.comment = comment
+        review.save()
+
+        # 成功レスポンス
+        return JsonResponse({
+            'success': True,
+            'message': 'レビューが正常に更新されました。',
+            'review': {
+                'id': review.id,
+                'rating': review.rating,
+                'comment': review.comment,
+                'created_at': review.created_at.strftime('%Y-%m-%d %H:%M'),
+                'updated_at': review.updated_at.strftime('%Y-%m-%d %H:%M')
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'サーバーエラーが発生しました。'
+        }, status=500)
+
+
+@login_required
+@require_POST
+def delete_review(request, review_id):
+    """レビューの削除"""
+    try:
+        # レビューの取得（自分のレビューのみ）
+        try:
+            review = Review.objects.get(pk=review_id, user=request.user)
+        except Review.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'レビューが見つかりません。'
+            }, status=404)
+
+        # レビューの削除
+        shop_name = review.shop.name
+        review.delete()
+
+        # 成功レスポンス
+        return JsonResponse({
+            'success': True,
+            'message': f'{shop_name}のレビューを削除しました。'
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'サーバーエラーが発生しました。'
+        }, status=500)
+
+
 # =================================== #
 # お気に入り機能
 # =================================== #
