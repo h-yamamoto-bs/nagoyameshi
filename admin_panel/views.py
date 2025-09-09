@@ -253,7 +253,10 @@ class UserListView(AdminRequiredMixin, ListView):
         queryset = User.objects.filter(manager_flag=False)
         search = self.request.GET.get('search')
         if search:
-            queryset = queryset.filter(email__icontains=search)
+            # メールアドレスと名前の両方で検索
+            queryset = queryset.filter(
+                Q(email__icontains=search) | Q(name__icontains=search)
+            )
         return queryset.order_by('-id')
     
     def get_context_data(self, **kwargs):

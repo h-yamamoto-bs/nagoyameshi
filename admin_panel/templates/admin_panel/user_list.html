@@ -377,6 +377,7 @@ function setupFiltersAndSearch() {
     const managerFilter = document.getElementById('managerFilter');
     const sortSelect = document.getElementById('sortSelect');
     const searchInput = document.getElementById('searchInput');
+    const searchButton = document.querySelector('.apply-filters-btn');
     
     if (subscriptionFilter) {
         subscriptionFilter.addEventListener('change', applyFilters);
@@ -396,6 +397,13 @@ function setupFiltersAndSearch() {
             if (e.key === 'Enter') {
                 applyFilters();
             }
+        });
+    }
+    
+    // 検索ボタンクリック時
+    if (searchButton) {
+        searchButton.addEventListener('click', function() {
+            applyFilters();
         });
     }
 }
