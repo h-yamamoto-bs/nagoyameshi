@@ -11,6 +11,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
 from django.conf import settings
 import stripe
@@ -80,6 +81,7 @@ class LoginView(TemplateView):
         })
 
 # 新規登録
+@method_decorator(csrf_protect, name='dispatch')
 class RegisterView(TemplateView):
     template_name = 'accounts/register.html'
 
