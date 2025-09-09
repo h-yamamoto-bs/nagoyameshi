@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Shop, Review, Favorite, Category, ShopCategory, History
 from django.views.generic import ListView, DetailView
-from django.db.models import Q, Avg, Count, Exists, OuterRef
+from django.db.models import Q, Avg, Count, Exists, OuterRef, Prefetch
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -14,6 +14,7 @@ from django.contrib import messages
 from accounts.decorators import subscription_required
 from accounts.models import Subscription
 from accounts.email_utils import send_reservation_mail
+from django.core.cache import cache
 
 class ShopListView(ListView):
     model = Shop
@@ -29,17 +30,37 @@ class ShopListView(ListView):
     
     def get_queryset(self):
         """一覧用QuerySetに集計と関連データを事前付与し、人気順(お気に入り数降順)で返す。"""
+        # キャッシュキーを生成
+        cache_key = f"shop_list_user_{self.request.user.id if self.request.user.is_authenticated else 'anonymous'}"
+        cached_result = cache.get(cache_key)
+        
+        if cached_result:
+            return cached_result
+            
+        # 最適化されたクエリ（select_related/prefetch_relatedで一括取得）
         qs = (Shop.objects
-              .all()
-              .prefetch_related('images', 'categories__category'))
-        # お気に入り数（人気度）
-        qs = qs.annotate(favorite_count=Count('favorites'))
+              .select_related()  # 外部キーを一括取得
+              .prefetch_related(
+                  'images',
+                  Prefetch('shopcategory_set__category', queryset=Category.objects.all())
+              ))
+        
+        # 集計データを一回で取得
+        qs = qs.annotate(
+            favorite_count=Count('favorites', distinct=True),
+            review_count=Count('reviews', distinct=True)
+        )
+        
         # ログインユーザーのお気に入り状態
         if self.request.user.is_authenticated:
             fav_sub = Favorite.objects.filter(user=self.request.user, shop=OuterRef('pk'))
             qs = qs.annotate(is_favorited=Exists(fav_sub))
+        
         # 人気順 -> 同数時はid昇順で安定
         qs = qs.order_by('-favorite_count', 'id')
+        
+        # 結果をキャッシュ（5分間）
+        cache.set(cache_key, qs, 300)
         return qs
 
     def get_context_data(self, **kwargs):

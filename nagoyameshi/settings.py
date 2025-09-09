@@ -65,6 +65,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Heroku用静的ファイル配信
+    'nagoyameshi.middleware.RequestOptimizationMiddleware',  # リクエスト最適化
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -144,19 +145,18 @@ if 'sqlite_old' not in DATABASES:
 # アカウントモデルの設定
 AUTH_USER_MODEL = "accounts.User"
 
-# セッション設定（クエリ制限対策）
-# データベースではなくローカルメモリでセッションを管理
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# セッション設定（リクエスト削減対策）
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
 SESSION_SAVE_EVERY_REQUEST = False  # リクエスト毎の保存を無効化
 SESSION_COOKIE_AGE = 86400  # 24時間でセッション期限切れ
 
-# キャッシュ設定（ローカルメモリ使用）
+# キャッシュ設定（ローカルメモリ使用でリクエスト削減）
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 86400,  # 24時間
+        'TIMEOUT': 3600,  # 1時間
         'OPTIONS': {
             'MAX_ENTRIES': 10000,
         }

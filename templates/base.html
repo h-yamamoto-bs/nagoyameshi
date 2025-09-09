@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <title>NAGOYAMESHI</title>
-    <!-- Google Fonts for beautiful typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Feather Icons for clean icons -->
-    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- フォント削減: システムフォントを優先使用 -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+        }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -765,7 +767,24 @@
 
     <script>
         // Feather Iconsの初期化
-        feather.replace();
     </script>
+
+    <!-- アイコン用CSS（外部リクエスト削減） -->
+    <style>
+        .search-icon::before { content: "🔍"; }
+        .user-icon::before { content: "👤"; }
+        .logout-icon::before { content: "🚪"; }
+        .login-icon::before { content: "🔑"; }
+        .register-icon::before { content: "📝"; }
+        .premium-icon::before { content: "⭐"; }
+        .mypage-icon::before { content: "🏠"; }
+        .heart-icon::before { content: "❤️"; }
+        .edit-icon::before { content: "✏️"; }
+        .delete-icon::before { content: "🗑️"; }
+        .cancel-icon::before { content: "❌"; }
+        .success-icon::before { content: "✅"; }
+        .info-icon::before { content: "ℹ️"; }
+        .warning-icon::before { content: "⚠️"; }
+    </style>
 </body>
 </html>
