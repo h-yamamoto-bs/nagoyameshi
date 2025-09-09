@@ -44,7 +44,12 @@ SECRET_KEY = env.str('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost', 'testserver'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    '127.0.0.1', 
+    'localhost', 
+    'testserver',
+    'nagoyameshi-h-yamamoto-bs-9950d5be8d98.herokuapp.com'
+])
 
 
 # Application definition
@@ -261,10 +266,22 @@ STATICFILES_DIRS = [
 ]
 
 # CSRF設定
-CSRF_COOKIE_SECURE = False  # 開発環境ではFalse
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)  # 本番環境ではTrue
 CSRF_COOKIE_HTTPONLY = False  # JavaScriptからアクセス可能にする
 CSRF_USE_SESSIONS = False  # Cookieを使用
 CSRF_COOKIE_SAMESITE = 'Lax'
+
+# CSRF Trusted Origins (本番環境用)
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'http://127.0.0.1:8001',
+    'http://localhost:8001', 
+    'https://nagoyameshi-h-yamamoto-bs-9950d5be8d98.herokuapp.com'
+])
+
+# セキュアなCookieとセッション設定
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # stripe api key
 STRIPE_API_SECRET_KEY = env.str('STRIPE_API_SECRET_KEY')

@@ -11,7 +11,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.http import JsonResponse
 from django.conf import settings
 import stripe
@@ -634,6 +634,7 @@ class ActivationPendingView(TemplateView):
         return ctx
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ActivationView(TemplateView):
     template_name = 'accounts/activation_result.html'
 

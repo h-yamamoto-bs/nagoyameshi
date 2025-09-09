@@ -26,9 +26,15 @@ def validate_activation_token(token):
 
 
 def send_activation_mail(request, user, token):
-    activate_url = request.build_absolute_uri(
-        reverse('accounts:activate', kwargs={'token': token})
-    )
+    # Heroku環境での正しいURL生成
+    if hasattr(settings, 'MY_URL') and settings.MY_URL:
+        base_url = settings.MY_URL.rstrip('/')
+        activate_url = f"{base_url}{reverse('accounts:activate', kwargs={'token': token})}"
+    else:
+        activate_url = request.build_absolute_uri(
+            reverse('accounts:activate', kwargs={'token': token})
+        )
+    
     subject = '[NagoyaMeshi] アカウント有効化のご案内'
     body = (
         f"{user.email} 様\n\n"
