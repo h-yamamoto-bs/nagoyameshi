@@ -1,0 +1,67 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}店舗削除確認 - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-exclamation-triangle text-danger"></i> 店舗削除確認</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'admin_panel:shop_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> 削除確認</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>警告:</strong> この操作は取り消すことができません。
+                </div>
+                
+                <p class="mb-3">以下の店舗を削除しますか？</p>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ object.name }}</h5>
+                        <p class="card-text">
+                            <strong>住所:</strong> {{ object.address }}<br>
+                            <strong>席数:</strong> {{ object.seat_count }}席<br>
+                            <strong>電話番号:</strong> {{ object.phone_number|default:"未設定" }}<br>
+                            <strong>管理者:</strong> {{ object.user.email }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>影響:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>店舗に関連するすべての予約履歴が削除されます</li>
+                        <li>店舗に関連するすべてのレビューが削除されます</li>
+                        <li>店舗に関連するすべてのお気に入りが削除されます</li>
+                        <li>店舗の画像も削除されます</li>
+                    </ul>
+                </div>
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'admin_panel:shop_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> 削除する
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

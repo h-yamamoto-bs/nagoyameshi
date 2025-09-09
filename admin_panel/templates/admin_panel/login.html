@@ -1,0 +1,60 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}管理者ログイン - NagoyaMeshi{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-lock"></i> 管理者ログイン</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">メールアドレス</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">パスワード</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div class="text-danger">{{ form.password.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt"></i> ログイン
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">管理者権限が必要です</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // フォームフィールドにBootstrapクラスを適用
+    const formFields = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
+    formFields.forEach(field => {
+        field.classList.add('form-control');
+    });
+});
+</script>
+{% endblock %}

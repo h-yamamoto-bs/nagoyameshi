@@ -1,0 +1,515 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}ユーザー管理 - 管理者パネル{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #007bff, #6f42c1);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .subscription-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .user-status-active {
+        color: #28a745;
+    }
+    .user-status-inactive {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-users"></i> ユーザー管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-download"></i> エクスポート
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?export=csv"><i class="fas fa-file-csv"></i> CSV</a></li>
+                <li><a class="dropdown-item" href="?export=excel"><i class="fas fa-file-excel"></i> Excel</a></li>
+            </ul>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <i class="fas fa-plus"></i> 新規ユーザー
+        </button>
+    </div>
+</div>
+
+<!-- 統計カード -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="h4 mb-0">{{ total_users }}</div>
+                        <small>総ユーザー数</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="h4 mb-0">{{ subscribed_users }}</div>
+                        <small>有料会員</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-crown fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="h4 mb-0">{{ new_users_this_month }}</div>
+                        <small>今月の新規登録</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-plus fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="h4 mb-0">{{ managers_count }}</div>
+                        <small>管理者</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-shield fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- フィルターと検索 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="メール、名前で検索..." id="searchInput" value="{{ request.GET.search }}">
+            <button class="btn btn-outline-secondary apply-filters-btn" type="button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" id="subscriptionFilter">
+            <option value="">すべて</option>
+            <option value="subscribed" {% if request.GET.subscription == 'subscribed' %}selected{% endif %}>有料会員</option>
+            <option value="free" {% if request.GET.subscription == 'free' %}selected{% endif %}>無料会員</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" id="managerFilter">
+            <option value="">すべて</option>
+            <option value="manager" {% if request.GET.manager == 'manager' %}selected{% endif %}>管理者</option>
+            <option value="user" {% if request.GET.manager == 'user' %}selected{% endif %}>一般ユーザー</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" id="sortSelect">
+            <option value="-id" {% if request.GET.sort == '-id' %}selected{% endif %}>登録順（新）</option>
+            <option value="id" {% if request.GET.sort == 'id' %}selected{% endif %}>登録順（旧）</option>
+            <option value="email" {% if request.GET.sort == 'email' %}selected{% endif %}>メール順</option>
+            <option value="-last_login" {% if request.GET.sort == '-last_login' %}selected{% endif %}>最終ログイン</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="button" class="btn btn-outline-secondary w-100 clear-filters-btn">
+            <i class="fas fa-times"></i> クリア
+        </button>
+    </div>
+</div>
+
+<!-- ユーザー一覧テーブル -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" id="selectAll" class="form-check-input">
+                        </th>
+                        <th>ユーザー</th>
+                        <th>ステータス</th>
+                        <th>ユーザーID</th>
+                        <th>最終ログイン</th>
+                        <th>予約数</th>
+                        <th width="150">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="form-check-input user-checkbox" value="{{ user.id }}">
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3">
+                                    {{ user.email|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ user.email }}</div>
+                                    <small class="text-muted">ID: {{ user.id }}</small>
+                                    <div class="mt-1">
+                                        {% if user.manager_flag %}
+                                            <span class="badge bg-danger subscription-badge">管理者</span>
+                                        {% endif %}
+                                        {% if user.subscription_set.exists %}
+                                            <span class="badge bg-success subscription-badge">有料会員</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary subscription-badge">無料会員</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                                <i class="fas fa-circle user-status-active"></i> アクティブ
+                            {% else %}
+                                <i class="fas fa-circle user-status-inactive"></i> 無効
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>ID: {{ user.id }}</div>
+                            <small class="text-muted">ユーザーID</small>
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                                <div>{{ user.last_login|date:"Y/m/d H:i" }}</div>
+                                <small class="text-muted">{{ user.last_login|timesince }}前</small>
+                            {% else %}
+                                <span class="text-muted">未ログイン</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ user.history_set.count }}</span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'admin_panel:user_edit' user.id %}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="編集">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if not user.manager_flag %}
+                                <a href="{% url 'admin_panel:user_delete' user.id %}" 
+                                   class="btn btn-sm btn-outline-danger" 
+                                   title="削除"
+                                   onclick="return confirm('ユーザー「{{ user.email|escapejs }}」を削除しますか？\n\nこの操作は取り消せません。')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <br>
+                            <span class="text-muted">ユーザーが見つかりません</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- ページネーション -->
+        {% if users.has_other_pages %}
+        <nav aria-label="ページネーション">
+            <ul class="pagination justify-content-center">
+                {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.subscription %}&subscription={{ request.GET.subscription }}{% endif %}{% if request.GET.manager %}&manager={{ request.GET.manager }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">前へ</a>
+                    </li>
+                {% endif %}
+                
+                {% for num in users.paginator.page_range %}
+                    {% if users.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > users.number|add:'-3' and num < users.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.subscription %}&subscription={{ request.GET.subscription }}{% endif %}{% if request.GET.manager %}&manager={{ request.GET.manager }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.subscription %}&subscription={{ request.GET.subscription }}{% endif %}{% if request.GET.manager %}&manager={{ request.GET.manager }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">次へ</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        <!-- 一括操作 -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <button type="button" class="btn btn-outline-danger btn-sm bulk-delete-btn" style="display: none;" id="bulkDeleteBtn">
+                    <i class="fas fa-trash"></i> 選択項目を削除
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm bulk-export-btn" style="display: none;" id="bulkExportBtn">
+                    <i class="fas fa-download"></i> 選択項目をエクスポート
+                </button>
+            </div>
+            <div>
+                <small class="text-muted">全 {{ users.paginator.count }} 件中 {{ users.start_index }} - {{ users.end_index }} 件表示</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新規ユーザー作成モーダル -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus"></i> 新規ユーザー作成</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'admin_panel:user_create' %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="userEmail" class="form-label">メールアドレス *</label>
+                            <input type="email" class="form-control" id="userEmail" name="email" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="userJob" class="form-label">職業</label>
+                            <input type="text" class="form-control" id="userJob" name="job">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="userPassword" class="form-label">パスワード *</label>
+                            <input type="password" class="form-control" id="userPassword" name="password" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="userPasswordConfirm" class="form-label">パスワード（確認） *</label>
+                            <input type="password" class="form-control" id="userPasswordConfirm" name="password_confirm" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="userBirthYear" class="form-label">生年</label>
+                            <input type="number" class="form-control" id="userBirthYear" name="birth_year" min="1900" max="2024">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <!-- 空のスペース -->
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isManager" name="manager_flag">
+                            <label class="form-check-label" for="isManager">
+                                管理者権限を付与
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">作成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// DOM読み込み完了時にイベントリスナーを設定
+document.addEventListener('DOMContentLoaded', function() {
+    setupUserEventListeners();
+    setupFiltersAndSearch();
+    setupBulkActions();
+});
+
+// ユーザー管理のイベントリスナーを設定
+function setupUserEventListeners() {
+    // ボタンは通常のリンクになったため、イベントリスナーは不要
+    console.log('ユーザー管理: 編集・削除ボタンはリンクベースで動作します');
+}
+
+// フィルターと検索の設定
+function setupFiltersAndSearch() {
+    // フィルター変更時の自動適用
+    const subscriptionFilter = document.getElementById('subscriptionFilter');
+    const managerFilter = document.getElementById('managerFilter');
+    const sortSelect = document.getElementById('sortSelect');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (subscriptionFilter) {
+        subscriptionFilter.addEventListener('change', applyFilters);
+    }
+    
+    if (managerFilter) {
+        managerFilter.addEventListener('change', applyFilters);
+    }
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', applyFilters);
+    }
+
+    // 検索フィールドでEnterキー押下時
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+    }
+}
+
+// 一括操作の設定
+function setupBulkActions() {
+    // 全選択チェックボックス
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.user-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActions();
+        });
+    }
+
+    // 個別チェックボックス
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkActions();
+        });
+    });
+}
+
+// フィルター適用
+function applyFilters() {
+    const params = new URLSearchParams(window.location.search);
+    
+    const search = document.getElementById('searchInput').value;
+    const subscription = document.getElementById('subscriptionFilter').value;
+    const manager = document.getElementById('managerFilter').value;
+    const sort = document.getElementById('sortSelect').value;
+    
+    // パラメータをクリア
+    params.delete('search');
+    params.delete('subscription');
+    params.delete('manager');
+    params.delete('sort');
+    params.delete('page');
+    
+    // 新しいパラメータを設定
+    if (search) params.set('search', search);
+    if (subscription) params.set('subscription', subscription);
+    if (manager) params.set('manager', manager);
+    if (sort) params.set('sort', sort);
+    
+    window.location.search = params.toString();
+}
+
+// フィルタークリア
+function clearFilters() {
+    window.location.href = window.location.pathname;
+}
+
+function setupBulkActions() {
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const bulkExportBtn = document.getElementById('bulkExportBtn');
+    const clearFiltersBtn = document.querySelector('.clear-filters-btn');
+
+    // 一括削除ボタン
+    if (bulkDeleteBtn) {
+        bulkDeleteBtn.addEventListener('click', bulkDelete);
+    }
+
+    // 一括エクスポートボタン
+    if (bulkExportBtn) {
+        bulkExportBtn.addEventListener('click', bulkExport);
+    }
+
+    // フィルタークリアボタン
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+}
+
+// 一括操作ボタンの表示/非表示
+function updateBulkActions() {
+    const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const bulkExportBtn = document.getElementById('bulkExportBtn');
+    
+    if (bulkDeleteBtn && bulkExportBtn) {
+        if (checkedCount > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+            bulkExportBtn.style.display = 'inline-block';
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+            bulkExportBtn.style.display = 'none';
+        }
+    }
+}
+
+// 一括削除
+function bulkDelete() {
+    const checkedUsers = document.querySelectorAll('.user-checkbox:checked');
+    if (checkedUsers.length === 0) return;
+    
+    if (confirm(`選択した ${checkedUsers.length} 人のユーザーを削除しますか？\n\nこの操作は取り消せません。`)) {
+        // 削除処理を実行
+        const userIds = Array.from(checkedUsers).map(cb => cb.value);
+        // 実装は必要に応じて追加
+        console.log('一括削除対象:', userIds);
+    }
+}
+
+// 一括エクスポート
+function bulkExport() {
+    const checkedUsers = document.querySelectorAll('.user-checkbox:checked');
+    if (checkedUsers.length === 0) return;
+    
+    const userIds = Array.from(checkedUsers).map(cb => cb.value);
+    window.location.href = `/admin-panel/users/export/?ids=${userIds.join(',')}`;
+}
+</script>
+{% endblock %}

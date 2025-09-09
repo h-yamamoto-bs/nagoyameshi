@@ -1,0 +1,139 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}ユーザー削除確認 - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-times"></i> ユーザー削除確認
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'admin_panel:user_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 削除確認
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>警告:</strong> この操作は取り消すことができません。
+                </div>
+                
+                <p class="mb-4">以下のユーザーを本当に削除しますか？</p>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <tr>
+                                <th width="120">ID</th>
+                                <td>{{ object.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>メールアドレス</th>
+                                <td><strong>{{ object.email }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>職業</th>
+                                <td>{{ object.job|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <th>生年</th>
+                                <td>{{ object.birth_year|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <th>権限</th>
+                                <td>
+                                    {% if object.manager_flag %}
+                                        <span class="badge bg-warning">管理者</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">一般ユーザー</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>アカウント状態</th>
+                                <td>
+                                    {% if object.is_active %}
+                                        <span class="badge bg-success">有効</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">無効</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>作成日時</th>
+                                <td>{{ object.date_joined|date:"Y年m月d日 H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if object.reviews.exists or object.favorites.exists or object.histories.exists %}
+                <div class="alert alert-warning mt-3" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>注意:</strong> このユーザーには以下のデータが関連付けられています：
+                    <ul class="mb-0 mt-2">
+                        {% if object.reviews.exists %}
+                        <li>レビュー: {{ object.reviews.count }}件</li>
+                        {% endif %}
+                        {% if object.favorites.exists %}
+                        <li>お気に入り: {{ object.favorites.count }}件</li>
+                        {% endif %}
+                        {% if object.histories.exists %}
+                        <li>予約履歴: {{ object.histories.count }}件</li>
+                        {% endif %}
+                    </ul>
+                    <p class="mt-2 mb-0">
+                        <small>これらのデータも同時に削除されます。</small>
+                    </p>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'admin_panel:user_edit' object.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> キャンセル
+                    </a>
+                    
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> 削除する
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 削除ボタンの再確認
+    const deleteForm = document.querySelector('form[method="post"]');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            const confirmDelete = confirm(
+                `ユーザー「{{ object.email|escapejs }}」を本当に削除しますか？\n\n` +
+                'この操作は取り消すことができません。\n' +
+                '関連するすべてのデータも削除されます。'
+            );
+            
+            if (!confirmDelete) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

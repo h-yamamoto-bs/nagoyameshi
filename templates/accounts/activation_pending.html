@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1 class="brand-title">メール確認待ち</h1>
+      <p class="login-subtitle">ご登録ありがとうございます。</p>
+    </div>
+    {% if email %}
+      <p>{{ email }} 宛に有効化リンクを送信しました。24時間以内にアクセスしてください。</p>
+    {% else %}
+      <p>有効化メールを送信しました。メールをご確認ください。</p>
+    {% endif %}
+    <div style="margin-top:24px;">
+      <a href="{% url 'accounts:activation_resend' %}">メールを再送する</a>
+    </div>
+    <div style="margin-top:12px;">
+      <a href="{% url 'accounts:login' %}">ログイン画面へ戻る</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

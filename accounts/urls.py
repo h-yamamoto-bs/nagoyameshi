@@ -21,4 +21,8 @@ urlpatterns = [
     # シンプルパスワード再設定（メール送信なし）
     path('password/reset/', views.SimplePasswordResetStartView.as_view(), name='password_reset'),
     path('password/reset/confirm/', views.SimplePasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    # アカウント有効化
+    path('activate/pending/', views.ActivationPendingView.as_view(), name='activation_pending'),
+    path('activate/<str:token>/', views.ActivationView.as_view(), name='activate'),
+    path('activate/resend/', views.ActivationResendView.as_view(), name='activation_resend'),
 ]

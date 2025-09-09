@@ -1,0 +1,150 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}{{ title }} - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-store"></i> {{ title }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'admin_panel:shop_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">店舗情報</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">店舗名 *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">住所 *</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <div class="text-danger">{{ form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.seat_count.id_for_label }}" class="form-label">席数 *</label>
+                            {{ form.seat_count }}
+                            {% if form.seat_count.errors %}
+                                <div class="text-danger">{{ form.seat_count.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">電話番号</label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger">{{ form.phone_number.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.user.id_for_label }}" class="form-label">管理者 *</label>
+                        {{ form.user }}
+                        {% if form.user.errors %}
+                            <div class="text-danger">{{ form.user.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if categories %}
+                    <div class="mb-3">
+                        <label class="form-label">カテゴリ</label>
+                        <div class="row">
+                            {% for category in categories %}
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="categories" value="{{ category.id }}" id="cat{{ category.id }}"
+                                           {% if object and category in object.categories.all %}checked{% endif %}>
+                                    <label class="form-check-label" for="cat{{ category.id }}">
+                                        {{ category.name }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'admin_panel:shop_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">ヘルプ</h5>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <ul>
+                        <li>*印の項目は必須です</li>
+                        <li>店舗名は100文字以内で入力してください</li>
+                        <li>住所は255文字以内で入力してください</li>
+                        <li>席数は正の整数で入力してください</li>
+                        <li>電話番号は15文字以内で入力してください</li>
+                        <li>管理者は店舗を管理できるユーザーです</li>
+                        <li>カテゴリは複数選択可能です</li>
+                    </ul>
+                </small>
+            </div>
+        </div>
+        
+        {% if object %}
+        <div class="card shadow mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">作成情報</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>ID:</strong> {{ object.id }}</p>
+                <p><strong>作成日:</strong> {{ object.created_at|default:"不明" }}</p>
+                <p><strong>最終更新:</strong> {{ object.updated_at|default:"不明" }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // フォームフィールドにBootstrapクラスを適用
+    const formFields = document.querySelectorAll('input[type="text"], input[type="number"], input[type="email"], input[type="tel"], select, textarea');
+    formFields.forEach(field => {
+        field.classList.add('form-control');
+    });
+});
+</script>
+{% endblock %}

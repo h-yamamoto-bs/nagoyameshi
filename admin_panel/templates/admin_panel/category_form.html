@@ -1,0 +1,170 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}カテゴリ編集 - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tag"></i> カテゴリ編集
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'admin_panel:category_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-edit"></i> カテゴリ情報の編集
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">カテゴリ名 *</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.name.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 更新
+                        </button>
+                        
+                        <a href="{% url 'admin_panel:category_delete' form.instance.pk %}" 
+                           class="btn btn-outline-danger"
+                           onclick="return confirm('このカテゴリを削除しますか？\n\nこの操作は取り消せません。')">
+                            <i class="fas fa-trash"></i> 削除
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> カテゴリ情報
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>ID</th>
+                        <td>{{ form.instance.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>カテゴリ名</th>
+                        <td><strong>{{ form.instance.name }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>使用店舗数</th>
+                        <td>
+                            {% if form.instance.shop_categories.count > 0 %}
+                                <span class="badge bg-primary">{{ form.instance.shop_categories.count }}店舗</span>
+                            {% else %}
+                                <span class="badge bg-secondary">0店舗</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                
+                {% if form.instance.shop_categories.count > 0 %}
+                <div class="mt-3">
+                    <a href="/admin-panel/shops/?category={{ form.instance.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-store"></i> 使用店舗を確認
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if form.instance.shop_categories.count > 0 %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-store"></i> 使用店舗（最新5件）
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for shop_category in form.instance.shop_categories.all|slice:":5" %}
+                <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                    <div>
+                        <strong>{{ shop_category.shop.name }}</strong><br>
+                        <small class="text-muted">{{ shop_category.shop.address|truncatechars:30 }}</small>
+                    </div>
+                    <a href="{% url 'admin_panel:shop_edit' shop_category.shop.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+                {% endfor %}
+                
+                {% if form.instance.shop_categories.count > 5 %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">他 {{ form.instance.shop_categories.count|add:"-5" }}店舗</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // フォームバリデーション
+    const form = document.querySelector('form');
+    const nameInput = document.getElementById('id_name');
+    
+    form.addEventListener('submit', function(e) {
+        if (!nameInput.value.trim()) {
+            e.preventDefault();
+            showError(nameInput, 'カテゴリ名は必須です。');
+        }
+    });
+    
+    function showError(input, message) {
+        // 既存のエラーメッセージを削除
+        const existingError = input.parentNode.querySelector('.error-message');
+        if (existingError) {
+            existingError.remove();
+        }
+        
+        // 新しいエラーメッセージを追加
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'text-danger mt-1 error-message';
+        errorDiv.innerHTML = `<small>${message}</small>`;
+        input.parentNode.appendChild(errorDiv);
+        
+        // 入力フィールドにフォーカス
+        input.focus();
+        input.classList.add('is-invalid');
+    }
+    
+    // 入力時にエラー状態をクリア
+    nameInput.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+        const errorMessage = this.parentNode.querySelector('.error-message');
+        if (errorMessage) {
+            errorMessage.remove();
+        }
+    });
+});
+</script>
+{% endblock %}

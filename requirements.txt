@@ -9,6 +9,7 @@ idna==3.10
 packaging==25.0
 pillow==11.3.0
 PyMySQL==1.1.2
+cryptography
 python-dotenv==1.1.1
 pytz==2025.2
 requests==2.32.4

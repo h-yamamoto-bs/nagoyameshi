@@ -1,0 +1,127 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}カテゴリ削除確認 - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tag"></i> カテゴリ削除確認
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'admin_panel:category_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> 削除確認
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>警告:</strong> この操作は取り消すことができません。
+                </div>
+                
+                <p class="mb-4">以下のカテゴリを本当に削除しますか？</p>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <tr>
+                                <th width="120">ID</th>
+                                <td>{{ object.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>カテゴリ名</th>
+                                <td><strong>{{ object.name }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>使用店舗数</th>
+                                <td>
+                                    {% if object.shop_categories.count > 0 %}
+                                        <span class="badge bg-warning">{{ object.shop_categories.count }}店舗</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">0店舗</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                {% if object.shop_categories.count > 0 %}
+                <div class="alert alert-warning mt-3" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>注意:</strong> このカテゴリは {{ object.shop_categories.count }}店舗で使用されています。
+                    <div class="mt-2">
+                        <strong>使用店舗:</strong>
+                        <ul class="mb-0">
+                            {% for shop_category in object.shop_categories.all|slice:":5" %}
+                            <li>{{ shop_category.shop.name }}</li>
+                            {% endfor %}
+                            {% if object.shop_categories.count > 5 %}
+                            <li><em>他 {{ object.shop_categories.count|add:"-5" }}店舗</em></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <p class="mt-2 mb-0">
+                        <small>カテゴリを削除すると、これらの店舗からこのカテゴリが削除されます。</small>
+                    </p>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'admin_panel:category_edit' object.pk %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> キャンセル
+                    </a>
+                    
+                    <form method="post" style="display: inline;" 
+                          data-category-name="{{ object.name|escapejs }}" 
+                          data-shop-count="{{ object.shop_categories.count }}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> 削除する
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 削除ボタンの再確認
+    const deleteForm = document.querySelector('form[method="post"]');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            // data属性から値を取得
+            const categoryName = this.getAttribute('data-category-name');
+            const shopCount = parseInt(this.getAttribute('data-shop-count')) || 0;
+            
+            let confirmMessage = `カテゴリ「${categoryName}」を本当に削除しますか？\n\nこの操作は取り消すことができません。\n`;
+            
+            if (shopCount > 0) {
+                confirmMessage += `${shopCount}店舗からこのカテゴリが削除されます。`;
+            } else {
+                confirmMessage += '関連データはありません。';
+            }
+            
+            const confirmDelete = confirm(confirmMessage);
+            
+            if (!confirmDelete) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

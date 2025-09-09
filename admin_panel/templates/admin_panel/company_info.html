@@ -1,0 +1,95 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}会社情報設定 - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-building"></i> 会社情報設定</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">基本情報</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">会社名 *</label>
+                            <input type="text" class="form-control" name="name" id="name" 
+                                   value="{{ company.name|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="postal_code" class="form-label">郵便番号</label>
+                            <input type="text" class="form-control" name="postal_code" id="postal_code" 
+                                   value="{{ company.postal_code|default:'' }}" placeholder="000-0000">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">住所</label>
+                        <input type="text" class="form-control" name="address" id="address" 
+                               value="{{ company.address|default:'' }}">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">電話番号</label>
+                            <input type="text" class="form-control" name="phone" id="phone" 
+                                   value="{{ company.phone|default:'' }}" placeholder="000-0000-0000">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">メールアドレス</label>
+                            <input type="email" class="form-control" name="email" id="email" 
+                                   value="{{ company.email|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">会社説明</label>
+                        <textarea class="form-control" name="description" id="description" rows="5">{{ company.description|default:'' }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">更新履歴</h5>
+            </div>
+            <div class="card-body">
+                {% if company %}
+                    <p><strong>登録日:</strong> {{ company.created_at|date:"Y年n月j日 H:i" }}</p>
+                    <p><strong>最終更新:</strong> {{ company.updated_at|date:"Y年n月j日 H:i" }}</p>
+                {% else %}
+                    <p class="text-muted">まだ登録されていません</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card shadow mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">ヘルプ</h5>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <ul>
+                        <li>会社名は必須項目です</li>
+                        <li>郵便番号は「000-0000」形式で入力してください</li>
+                        <li>設定した情報はサイト上に表示される場合があります</li>
+                    </ul>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'django_extensions', # 開発支援ツール
     'accounts',  # アカウント管理アプリ
     'shops',     # ショップ管理アプリ
+    'admin_panel',  # 管理者機能アプリ
 ]
 
 MIDDLEWARE = [

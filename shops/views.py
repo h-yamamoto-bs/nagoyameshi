@@ -13,6 +13,7 @@ from django.db import transaction
 from django.contrib import messages
 from accounts.decorators import subscription_required
 from accounts.models import Subscription
+from accounts.email_utils import send_reservation_mail
 
 class ShopListView(ListView):
     model = Shop
@@ -522,13 +523,17 @@ def create_reservation(request):
                 messages.error(request, f'指定日の残席が不足しています。（残り {remaining} 席）')
                 return redirect('shops:shop_detail', pk=shop.id)
 
-            # 予約をHistoryに保存（履歴として管理）
+            # 予約保存
             History.objects.create(
                 shop=shop,
                 user=request.user,
                 date=reserve_date,
                 number_of_people=people,
             )
+
+        # メール送信（失敗してもフロー継続）
+        if request.user.email:
+            send_reservation_mail(request.user, shop, reserve_date, people)
 
         if is_ajax(request):
             new_remaining = shop.remaining_seats_on(reserve_date)

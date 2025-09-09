@@ -1,0 +1,153 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}店舗一覧 - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-store"></i> 店舗管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'admin_panel:shop_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> 新規登録
+            </a>
+            <a href="{% url 'admin_panel:shop_csv_export' %}" class="btn btn-success">
+                <i class="fas fa-download"></i> CSV出力
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 検索フォーム -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="get" class="d-flex">
+            <input type="text" name="search" class="form-control" placeholder="店舗名で検索" 
+                   value="{{ request.GET.search }}">
+            <button type="submit" class="btn btn-outline-primary ms-2">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+    <div class="col-md-6">
+        <form method="post" action="{% url 'admin_panel:shop_csv_import' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="file" name="csv_file" class="form-control" accept=".csv">
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="fas fa-upload"></i> CSV入力
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 店舗一覧テーブル -->
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>店舗名</th>
+                        <th>住所</th>
+                        <th>席数</th>
+                        <th>電話番号</th>
+                        <th>管理者</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shop in shops %}
+                    <tr>
+                        <td>{{ shop.id }}</td>
+                        <td><strong>{{ shop.name }}</strong></td>
+                        <td>{{ shop.address|truncatechars:50 }}</td>
+                        <td>{{ shop.seat_count }}席</td>
+                        <td>{{ shop.phone_number|default:'-' }}</td>
+                        <td>{{ shop.user.email }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'admin_panel:shop_edit' shop.pk %}" 
+                                   class="btn btn-outline-primary"
+                                   title="編集">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'admin_panel:shop_delete' shop.pk %}" 
+                                   class="btn btn-outline-danger"
+                                   title="削除"
+                                   onclick="return confirm('本当に削除しますか？')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">店舗が登録されていません</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ページネーション -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="ページネーション" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">最初</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">前へ</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">次へ</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">最後</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 編集・削除ボタンのクリックイベントを監視
+    const editButtons = document.querySelectorAll('a[href*="/edit/"]');
+    const deleteButtons = document.querySelectorAll('a[href*="/delete/"]');
+    
+    editButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            console.log('編集ボタンがクリックされました:', this.href);
+            // デフォルトの動作を確実に実行
+            return true;
+        });
+    });
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            console.log('削除ボタンがクリックされました:', this.href);
+            // 確認ダイアログが既にonclickで設定されているので、そのまま処理
+            return true;
+        });
+    });
+    
+    console.log('編集ボタン数:', editButtons.length);
+    console.log('削除ボタン数:', deleteButtons.length);
+});
+</script>
+{% endblock %}
+{% endblock %}

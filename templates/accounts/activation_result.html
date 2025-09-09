@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1 class="brand-title">アカウント有効化</h1>
+    </div>
+    {% if status == 'success' %}
+      <p>アカウントを有効化しました。ログインできます。</p>
+      <a href="{% url 'accounts:login' %}" class="btn-login" style="display:block;text-align:center;margin-top:16px;">ログインへ</a>
+    {% elif status == 'already' %}
+      <p>このアカウントは既に有効化済みです。</p>
+      <a href="{% url 'accounts:login' %}" class="btn-login" style="display:block;text-align:center;margin-top:16px;">ログインへ</a>
+    {% else %}
+      <p>リンクが無効か期限切れです。再送信してください。</p>
+      <a href="{% url 'accounts:activation_resend' %}" class="btn-login" style="display:block;text-align:center;margin-top:16px;">再送リクエスト</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

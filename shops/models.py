@@ -38,6 +38,7 @@ class Review(models.Model):
     user = models.ForeignKey(User, related_name='reviews', on_delete=models.CASCADE, null=True, blank=True)
     rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)], null=False, blank=False)
     comment = models.TextField(max_length=1000, null=True, blank=True)
+    is_visible = models.BooleanField(default=True, verbose_name='表示/非表示')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -54,6 +55,7 @@ class History(models.Model):
     user = models.ForeignKey(User, related_name='histories', on_delete=models.CASCADE)
     date = models.DateField(null=False, blank=False)
     number_of_people = models.PositiveIntegerField(null=False, blank=False)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = 'histories'

@@ -1,0 +1,129 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}ダッシュボード - 管理者パネル{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-tachometer-alt"></i> ダッシュボード</h1>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">店舗数</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ shop_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-store fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">会員数</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ user_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">レビュー数</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ review_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-star fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">過去30日の予約人数</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ recent_reservations }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">クイックアクセス</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'admin_panel:shop_create' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus text-success"></i> 新しい店舗を登録
+                    </a>
+                    <a href="{% url 'admin_panel:category_create' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus text-primary"></i> 新しいカテゴリを登録
+                    </a>
+                    <a href="{% url 'admin_panel:shop_csv_export' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-download text-info"></i> 店舗データをCSV出力
+                    </a>
+                    <a href="{% url 'admin_panel:user_csv_export' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-download text-warning"></i> 会員データをCSV出力
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">システム情報</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>カテゴリ数:</strong> {{ category_count }}</p>
+                <p><strong>ログイン管理者:</strong> {{ user.email }}</p>
+                <p><strong>最終ログイン:</strong> {{ user.last_login|date:"Y年n月j日 H:i" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 4px solid #1cc88a !important;
+}
+.border-left-info {
+    border-left: 4px solid #36b9cc !important;
+}
+.border-left-warning {
+    border-left: 4px solid #f6c23e !important;
+}
+</style>
+{% endblock %}

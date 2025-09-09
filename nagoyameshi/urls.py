@@ -26,6 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('shops/', include('shops.urls')),
+    path('admin-panel/', include('admin_panel.urls')),  # 管理者パネル
 ]
 
 # Heroku本番環境でもメディアファイルを配信（一時的な解決策）

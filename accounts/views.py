@@ -19,6 +19,7 @@ import urllib.parse
 from datetime import datetime, timezone
 from .utils import sync_subscription_from_stripe
 from django.views.generic import TemplateView
+from .activation import validate_activation_token, generate_activation_token, send_activation_mail
 
 # ユーザー一覧
 class AccountListView(ListView):
@@ -112,19 +113,27 @@ class RegisterView(TemplateView):
             messages.error(request, 'このメールアドレスは既に登録されています。', extra_tags='auth')
             return render(request, self.template_name, {'email': email})
         
-        # ユーザー作成
+        # ユーザー作成 (メール認証待ち: is_active=False)
         try:
             user = User.objects.create_user(
                 email=email,
                 password=password
             )
+            # 一旦無効
+            user.is_active = False
+            user.save()
 
-            # 成功メッセージ
-            messages.success(request, 'アカウントが作成されました。ログインしてください。', extra_tags='auth')
+            # アクティベーショントークン生成 & メール送信
+            from .activation import generate_activation_token, send_activation_mail
+            token = generate_activation_token(user)
+            try:
+                send_activation_mail(request, user, token)
+            except Exception:
+                messages.warning(request, '確認メールの送信に失敗しました。後でもう一度試してください。', extra_tags='auth')
 
-            # ログインページにリダイレクト
-            return redirect('accounts:login')
-        
+            # ペンディング画面へ
+            request.session['pending_activation_email'] = user.email
+            return redirect('accounts:activation_pending')
         except Exception as e:
             messages.error(request, f'アカウントの作成に失敗しました: {str(e)}', extra_tags='auth')
             return render(request, self.template_name, {'email': email})
@@ -596,6 +605,68 @@ class PayWithStripeView(View):
             return JsonResponse({'success': True, 'id': session.id, 'checkout_url': getattr(session, 'url', None)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ================================
+# アカウント有効化
+# ================================
+class ActivationPendingView(TemplateView):
+    template_name = 'accounts/activation_pending.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['email'] = self.request.session.get('pending_activation_email')
+        return ctx
+
+
+class ActivationView(TemplateView):
+    template_name = 'accounts/activation_result.html'
+
+    def get(self, request, *args, **kwargs):
+        token = kwargs.get('token')
+        user_id = validate_activation_token(token)
+        status = 'invalid'
+        if user_id:
+            try:
+                user = User.objects.get(pk=user_id)
+                if user.is_active:
+                    status = 'already'
+                else:
+                    user.is_active = True
+                    user.save()
+                    status = 'success'
+            except User.DoesNotExist:
+                status = 'invalid'
+        return render(request, self.template_name, {'status': status})
+
+
+class ActivationResendView(TemplateView):
+    template_name = 'accounts/activation_resend.html'
+
+    def post(self, request, *args, **kwargs):
+        email = request.POST.get('email', '').strip()
+        if not email:
+            messages.error(request, 'メールアドレスを入力してください。', extra_tags='auth')
+            return redirect('accounts:activation_resend')
+        try:
+            user = User.objects.get(email__iexact=email)
+            if user.is_active:
+                messages.info(request, '既に有効化済みです。', extra_tags='auth')
+                return redirect('accounts:login')
+            token = generate_activation_token(user)
+            send_activation_mail(request, user, token)
+            request.session['pending_activation_email'] = user.email
+            messages.success(request, '確認メールを再送しました。', extra_tags='auth')
+            return redirect('accounts:activation_pending')
+        except User.DoesNotExist:
+            messages.error(request, 'このメールアドレスは登録されていません。', extra_tags='auth')
+            return redirect('accounts:activation_resend')
+        except Exception:
+            messages.error(request, 'メール送信に失敗しました。', extra_tags='auth')
+            return redirect('accounts:activation_resend')
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name)
 
 
 # ================================
