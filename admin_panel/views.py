@@ -53,6 +53,14 @@ class AdminLoginView(LoginView):
     redirect_authenticated_user = False  # リダイレクトループを防ぐため無効化
     
     def dispatch(self, request, *args, **kwargs):
+        # セッションクリア処理
+        if request.GET.get('clear_session'):
+            request.session.flush()
+            from django.contrib.auth import logout
+            logout(request)
+            messages.success(request, 'セッションをクリアしました。再度ログインしてください。')
+            return redirect('admin_panel:login')
+        
         # デバッグ用ログ
         user = request.user
         if hasattr(user, 'email'):
