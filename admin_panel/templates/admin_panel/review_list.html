@@ -302,46 +302,6 @@
 
 {% block extra_js %}
 <script>
-// CSRFトークン取得
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// エラー表示用のトースト機能
-function showToast(message, type = 'info') {
-    // Bootstrap Toast または単純なアラート
-    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
-        // Bootstrap Toast の実装
-        const toastElement = document.createElement('div');
-        toastElement.className = `toast align-items-center text-white bg-${type} border-0`;
-        toastElement.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-        document.body.appendChild(toastElement);
-        const toast = new bootstrap.Toast(toastElement);
-        toast.show();
-        
-        // 自動削除
-        setTimeout(() => toastElement.remove(), 5000);
-    } else {
-        alert(message);
-    }
-}
-
 // AJAXテスト関数
 function testAjax() {
     console.log('AJAX テストを開始...');
@@ -365,12 +325,12 @@ function testAjax() {
         if (data.success) {
             showToast('AJAX通信テスト成功！', 'success');
         } else {
-            showToast('AJAX通信テスト失敗: ' + data.error, 'danger');
+            showToast('AJAX通信テスト失敗: ' + data.error, 'error');
         }
     })
     .catch(error => {
         console.error('AJAX エラー:', error);
-        showToast('AJAX通信エラー: ' + error.message, 'danger');
+        showToast('AJAX通信エラー: ' + error.message, 'error');
     });
 }
 
@@ -481,7 +441,7 @@ function loadMoreReviews() {
             
             showToast(`${newCards.length}件のレビューを追加しました`, 'success');
         } else {
-            showToast('レビューの読み込みに失敗しました: ' + (data.error || '不明なエラー'), 'danger');
+            showToast('レビューの読み込みに失敗しました: ' + (data.error || '不明なエラー'), 'error');
             
             // ボタンを再有効化
             loadMoreBtn.disabled = false;
@@ -490,7 +450,7 @@ function loadMoreReviews() {
     })
     .catch(error => {
         console.error('さらに表示エラー:', error);
-        showToast('通信エラー: ' + error.message, 'danger');
+        showToast('通信エラー: ' + error.message, 'error');
         
         // ボタンを再有効化
         loadMoreBtn.disabled = false;
@@ -541,7 +501,7 @@ function toggleReviewVisibility(reviewId, isVisible) {
     const csrfToken = getCookie('csrftoken');
     if (!csrfToken) {
         console.error('CSRFトークンが見つかりません');
-        showToast('CSRFトークンが見つかりません', 'danger');
+        showToast('CSRFトークンが見つかりません', 'error');
         return;
     }
     
@@ -569,12 +529,12 @@ function toggleReviewVisibility(reviewId, isVisible) {
             showToast(data.message || 'レビューの表示状態を変更しました', 'success');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('エラー: ' + (data.error || '不明なエラー'), 'danger');
+            showToast('エラー: ' + (data.error || '不明なエラー'), 'error');
         }
     })
     .catch(error => {
         console.error('通信エラー:', error);
-        showToast('通信エラー: ' + error.message, 'danger');
+        showToast('通信エラー: ' + error.message, 'error');
     });
 }
 
@@ -589,7 +549,7 @@ function deleteReview(reviewId) {
     const csrfToken = getCookie('csrftoken');
     if (!csrfToken) {
         console.error('CSRFトークンが見つかりません');
-        showToast('CSRFトークンが見つかりません', 'danger');
+        showToast('CSRFトークンが見つかりません', 'error');
         return;
     }
     
@@ -615,12 +575,12 @@ function deleteReview(reviewId) {
             showToast(data.message || 'レビューを削除しました', 'success');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('削除エラー: ' + (data.error || '不明なエラー'), 'danger');
+            showToast('削除エラー: ' + (data.error || '不明なエラー'), 'error');
         }
     })
     .catch(error => {
         console.error('削除通信エラー:', error);
-        showToast('削除通信エラー: ' + error.message, 'danger');
+        showToast('削除通信エラー: ' + error.message, 'error');
     });
 }
 
@@ -689,32 +649,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // レビューカードのイベントリスナーを設定する関数
 function setupReviewCardEvents() {
+    console.log('setupReviewCardEvents called');
+    
     // 表示/非表示切り替えボタン
-    document.querySelectorAll('.toggle-visibility-btn').forEach(btn => {
+    const visibilityBtns = document.querySelectorAll('.toggle-visibility-btn');
+    console.log('Found visibility buttons:', visibilityBtns.length);
+    visibilityBtns.forEach(btn => {
         btn.removeEventListener('click', handleVisibilityToggle); // 重複防止
         btn.addEventListener('click', handleVisibilityToggle);
     });
     
     // 削除ボタン
-    document.querySelectorAll('.delete-review-btn').forEach(btn => {
+    const deleteBtns = document.querySelectorAll('.delete-review-btn');
+    console.log('Found delete buttons:', deleteBtns.length);
+    deleteBtns.forEach(btn => {
         btn.removeEventListener('click', handleReviewDelete); // 重複防止
         btn.addEventListener('click', handleReviewDelete);
     });
     
     // レビュー内容展開/折りたたみ
-    document.querySelectorAll('.toggle-content-btn').forEach(btn => {
+    const toggleBtns = document.querySelectorAll('.toggle-content-btn');
+    console.log('Found toggle buttons:', toggleBtns.length);
+    toggleBtns.forEach(btn => {
         btn.removeEventListener('click', handleContentToggle); // 重複防止
         btn.addEventListener('click', handleContentToggle);
     });
     
     // 店舗詳細ボタン
-    document.querySelectorAll('.view-shop-btn').forEach(btn => {
+    const shopBtns = document.querySelectorAll('.view-shop-btn');
+    console.log('Found shop buttons:', shopBtns.length);
+    shopBtns.forEach(btn => {
         btn.removeEventListener('click', handleViewShop); // 重複防止
         btn.addEventListener('click', handleViewShop);
     });
     
     // ユーザー詳細ボタン
-    document.querySelectorAll('.view-user-btn').forEach(btn => {
+    const userBtns = document.querySelectorAll('.view-user-btn');
+    console.log('Found user buttons:', userBtns.length);
+    userBtns.forEach(btn => {
         btn.removeEventListener('click', handleViewUser); // 重複防止
         btn.addEventListener('click', handleViewUser);
     });
@@ -722,25 +694,37 @@ function setupReviewCardEvents() {
 
 // イベントハンドラー関数群
 function handleVisibilityToggle(e) {
+    console.log('handleVisibilityToggle called', e);
     e.preventDefault();
+    e.stopPropagation();
     const reviewId = this.getAttribute('data-review-id');
-    const isVisible = this.getAttribute('data-visible') === 'true';
-    toggleReviewVisibility(reviewId, isVisible);
+    const currentVisible = this.getAttribute('data-visible') === 'true';
+    console.log('Review ID:', reviewId, 'Current Visible:', currentVisible);
+    // 現在の状態と逆にする（表示中なら非表示に、非表示なら表示に）
+    toggleReviewVisibility(reviewId, !currentVisible);
 }
 
 function handleReviewDelete(e) {
+    console.log('handleReviewDelete called', e);
     e.preventDefault();
+    e.stopPropagation();
     const reviewId = this.getAttribute('data-review-id');
+    console.log('Delete Review ID:', reviewId);
     deleteReview(reviewId);
 }
 
 function handleContentToggle(e) {
+    console.log('handleContentToggle called', e);
+    e.preventDefault();
+    e.stopPropagation();
     const reviewId = this.getAttribute('data-review-id');
     toggleContent(reviewId);
 }
 
 function handleViewShop(e) {
+    console.log('handleViewShop called', e);
     e.preventDefault();
+    e.stopPropagation();
     const shopId = this.getAttribute('data-shop-id');
     console.log('ショップボタンクリック - Shop ID:', shopId);
     if (shopId) {
@@ -751,7 +735,9 @@ function handleViewShop(e) {
 }
 
 function handleViewUser(e) {
+    console.log('handleViewUser called', e);
     e.preventDefault();
+    e.stopPropagation();
     const userId = this.getAttribute('data-user-id');
     console.log('ユーザーボタンクリック - User ID:', userId);
     if (userId && userId !== 'None') {

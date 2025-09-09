@@ -33,6 +33,7 @@ urlpatterns = [
     
     # カテゴリ管理
     path('categories/', views.CategoryListView.as_view(), name='category_list'),
+    path('categories/<int:category_id>/shops/', views.CategoryShopsView.as_view(), name='category_shops'),
     path('categories/create/', views.CategoryCreateView.as_view(), name='category_create'),
     path('categories/<int:pk>/edit/', views.CategoryEditView.as_view(), name='category_edit'),
     path('categories/<int:pk>/delete/', views.CategoryDeleteView.as_view(), name='category_delete'),

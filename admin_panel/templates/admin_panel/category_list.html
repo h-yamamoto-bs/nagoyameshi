@@ -84,9 +84,9 @@
                 
                 {% if category.shop_count > 0 %}
                 <div class="mt-3">
-                    <button class="btn btn-sm btn-outline-info w-100 view-shops-btn" data-category-id="{{ category.id }}">
+                    <a href="{% url 'admin_panel:category_shops' category.id %}" class="btn btn-sm btn-outline-info w-100">
                         <i class="fas fa-store"></i> この店舗を見る
-                    </button>
+                    </a>
                 </div>
                 {% endif %}
             </div>

@@ -59,16 +59,16 @@
                                 <i class="fas fa-tags"></i> カテゴリ管理
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a class="nav-link {% if 'review' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'admin_panel:review_list' %}">
                                 <i class="fas fa-star"></i> レビュー管理
                             </a>
-                        </li>
-                        <li class="nav-item">
+                        </li> -->
+                        <!-- <li class="nav-item">
                             <a class="nav-link {% if 'sales' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'admin_panel:sales_list' %}">
                                 <i class="fas fa-chart-line"></i> 売上管理
                             </a>
-                        </li>
+                        </li> -->
                         <hr class="text-white">
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'shops:shop_list' %}" target="_blank">
@@ -105,6 +105,64 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // CSRFトークンを取得する関数
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // トースト通知を表示する関数
+        function showToast(message, type = 'info') {
+            // 既存のトーストがあれば削除
+            const existingToast = document.querySelector('.toast-container');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // トーストコンテナを作成
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+
+            // トーストメッセージを作成
+            const toastId = 'toast-' + Date.now();
+            toastContainer.innerHTML = `
+                <div id="${toastId}" class="toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(toastContainer);
+
+            // Bootstrapのトーストを初期化して表示
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+
+            // 3秒後に自動で削除
+            setTimeout(() => {
+                if (toastContainer.parentNode) {
+                    toastContainer.remove();
+                }
+            }, 3000);
+        }
+    </script>
     {% block scripts %}
     {% endblock %}
 </body>

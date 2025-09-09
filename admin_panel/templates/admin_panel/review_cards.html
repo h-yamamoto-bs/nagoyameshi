@@ -28,17 +28,17 @@
                     </button>
                     <ul class="dropdown-menu">
                         {% if review.is_visible %}
-                            <li><a class="dropdown-item toggle-visibility-btn" href="#" data-review-id="{{ review.id }}" data-visible="false">
+                            <li><button class="dropdown-item toggle-visibility-btn" type="button" data-review-id="{{ review.id }}" data-visible="false">
                                 <i class="fas fa-eye-slash"></i> 非表示にする
-                            </a></li>
+                            </button></li>
                         {% else %}
-                            <li><a class="dropdown-item toggle-visibility-btn" href="#" data-review-id="{{ review.id }}" data-visible="true">
+                            <li><button class="dropdown-item toggle-visibility-btn" type="button" data-review-id="{{ review.id }}" data-visible="true">
                                 <i class="fas fa-eye"></i> 表示する
-                            </a></li>
+                            </button></li>
                         {% endif %}
-                        <li><a class="dropdown-item text-danger delete-review-btn" href="#" data-review-id="{{ review.id }}">
+                        <li><button class="dropdown-item text-danger delete-review-btn" type="button" data-review-id="{{ review.id }}">
                             <i class="fas fa-trash"></i> 削除
-                        </a></li>
+                        </button></li>
                     </ul>
                 </div>
             </div>

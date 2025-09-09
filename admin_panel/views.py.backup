@@ -1,21 +1,50 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.shortcuts import render, redirect
+from django.views.generic import TemplateView
 from django.contrib.auth.views import LoginView, LogoutView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib import messages
-from django.urls import reverse_lazy, reverse
-from django.db.models import Q, Count, Sum, Avg
-from django.db import models
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.http import require_POST
-import csv
-from datetime import datetime, timedelta
-from django.utils import timezone
+from django.urls import reverse_lazy
 
 from accounts.models import User
-from shops.models import Shop, Review, Category, History
-from .models import CompanyInfo
+
+
+class AdminRequiredMixin(UserPassesTestMixin):
+    """管理者権限が必要なビューのベースクラス"""
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.manager_flag
+    
+    def handle_no_permission(self):
+        return redirect('admin_panel:login')
+
+
+class AdminLoginView(LoginView):
+    """管理者ログイン"""
+    template_name = 'admin_panel/login.html'
+    redirect_authenticated_user = True
+    
+    def get_success_url(self):
+        return reverse_lazy('admin_panel:dashboard')
+    
+    def form_valid(self, form):
+        user = form.get_user()
+        if not user.manager_flag:
+            messages.error(self.request, '管理者権限がありません。')
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
+
+class AdminLogoutView(LogoutView):
+    """管理者ログアウト"""
+    next_page = 'admin_panel:login'
+
+
+class AdminDashboardView(AdminRequiredMixin, TemplateView):
+    """管理者ダッシュボード"""
+    template_name = 'admin_panel/dashboard.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
 
 
 class AdminRequiredMixin(UserPassesTestMixin):
@@ -332,7 +361,21 @@ class UserDetailView(AdminRequiredMixin, DetailView):
     context_object_name = 'user'
     
     def get_queryset(self):
-        return User.objects.filter(manager_flag=False)
+        return User.objects.filter(manager_flag=False).prefetch_related(
+            'reviews__shop',
+            'histories__shop',
+            'favorites__shop'
+        )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.get_object()
+        
+        # 平均評価を計算
+        avg_rating = user.reviews.aggregate(Avg('rating'))['rating__avg']
+        context['avg_rating'] = avg_rating if avg_rating else 0
+        
+        return context
 
 
 class UserDeleteView(AdminRequiredMixin, DeleteView):
@@ -431,31 +474,15 @@ class CategoryShopsView(AdminRequiredMixin, ListView):
     
     def get_queryset(self):
         from shops.models import ShopCategory
-        category_id = self.kwargs['category_id']
-        
-        # カテゴリに属する店舗を取得
-        shop_categories = ShopCategory.objects.filter(category_id=category_id)
-        shop_ids = shop_categories.values_list('shop_id', flat=True)
-        
-        queryset = Shop.objects.filter(id__in=shop_ids).select_related('user').prefetch_related('images')
-        
-        # 検索機能
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(name__icontains=search)
-        
-        return queryset.order_by('name')
+        self.category = get_object_or_404(Category, pk=self.kwargs['pk'])
+        return Shop.objects.filter(
+            shop_categories__category=self.category
+        ).select_related().order_by('name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        category_id = self.kwargs['category_id']
-        
-        try:
-            category = Category.objects.get(id=category_id)
-            context['category'] = category
-        except Category.DoesNotExist:
-            context['category'] = None
-        
+        context['category'] = self.category
+        context['shop_count'] = self.get_queryset().count()
         return context
 
 
@@ -758,3 +785,57 @@ class SalesListView(AdminRequiredMixin, ListView):
         context['popular_shops'] = popular_shops
         
         return context
+
+
+@login_required
+@user_passes_test(lambda u: u.manager_flag)
+@require_POST
+def toggle_review_visibility(request, pk):
+    """レビューの表示/非表示を切り替え"""
+    try:
+        review = get_object_or_404(Review, pk=pk)
+        review.is_visible = not review.is_visible
+        review.save()
+        
+        status = '表示' if review.is_visible else '非表示'
+        return JsonResponse({
+            'success': True,
+            'message': f'レビューを{status}にしました。',
+            'is_visible': review.is_visible
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }, status=400)
+
+
+@login_required
+@user_passes_test(lambda u: u.manager_flag)
+@require_POST
+def delete_review(request, pk):
+    """レビューを削除"""
+    try:
+        review = get_object_or_404(Review, pk=pk)
+        review.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'レビューを削除しました。'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'エラーが発生しました: {str(e)}'
+        }, status=400)
+
+
+@login_required
+@user_passes_test(lambda u: u.manager_flag)
+def ajax_test(request):
+    """AJAX テスト用エンドポイント"""
+    return JsonResponse({
+        'success': True,
+        'message': 'AJAX通信が正常に動作しています。',
+        'timestamp': timezone.now().isoformat()
+    })
