@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Shop, Review, Favorite, Category, ShopCategory, History
 from django.views.generic import ListView, DetailView
-from django.db.models import Q, Avg, Count, Exists, OuterRef, Prefetch
+from django.db.models import Q, Avg, Count, Exists, OuterRef, Prefetch, Case, When, IntegerField
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
@@ -10,6 +10,7 @@ from django.template.loader import render_to_string
 from django.middleware.csrf import get_token
 from datetime import datetime
 from django.db import transaction
+from django.core.cache import cache
 from django.contrib import messages
 from accounts.decorators import subscription_required
 from accounts.models import Subscription
@@ -37,12 +38,12 @@ class ShopListView(ListView):
         if cached_result:
             return cached_result
             
-        # 最適化されたクエリ（select_related/prefetch_relatedで一括取得）
+        # 最適化されたクエリ
         qs = (Shop.objects
-              .select_related()  # 外部キーを一括取得
+              .select_related('user')
               .prefetch_related(
                   'images',
-                  Prefetch('shopcategory_set__category', queryset=Category.objects.all())
+                  'categories__category'
               ))
         
         # 集計データを一回で取得
@@ -79,18 +80,33 @@ class ShopListView(ListView):
             else:
                 is_favorited = False
 
-            # カテゴリーはprefetch済み。未prefetch環境でも同じ書き方で動作
-            # prefetch_related済み: shop.categories.all() で追加クエリを出さない
-            categories_qs = shop.categories.all()  # through(ShopCategory) + category はprefetch済み
+            # カテゴリーはprefetch済み
+            categories_list = []
+            for shop_category in shop.categories.all():
+                categories_list.append(shop_category.category)
+            
+            # メイン画像をprefetch済みデータから取得（N+1問題を回避）
+            main_image_url = None
+            if hasattr(shop, '_prefetched_objects_cache') and 'images' in shop._prefetched_objects_cache:
+                images = shop._prefetched_objects_cache['images']
+                if images:
+                    main_image_url = images[0].image.url
+            else:
+                # fallback
+                first_image = shop.images.first()
+                if first_image:
+                    main_image_url = first_image.image.url
 
             shops_with_favorites.append({
                 'shop': shop,
                 'is_favorited': is_favorited,
                 'favorite_count': favorite_count,
-                'categories': categories_qs,
+                'categories': categories_list,
+                'main_image_url': main_image_url,
             })
 
         context['shops_with_favorites'] = shops_with_favorites
+        context['categories'] = Category.objects.all()
         return context
 
 
@@ -104,40 +120,67 @@ class ShopDetailView(DetailView):
         get_token(request)
         return super().dispatch(request, *args, **kwargs)
     
+    def get_object(self, queryset=None):
+        """最適化されたオブジェクト取得 - 一回のクエリで全情報取得"""
+        if queryset is None:
+            queryset = self.get_queryset()
+        
+        pk = self.kwargs.get(self.pk_url_kwarg)
+        if pk is None:
+            raise ValueError("Shop ID is required")
+        
+        # 全ての関連データを一度に取得し、集計も含める
+        try:
+            shop = (Shop.objects
+                    .select_related('user')
+                    .prefetch_related(
+                        'images',
+                        'categories__category',
+                        Prefetch('reviews', queryset=Review.objects.select_related('user').order_by('-created_at')),
+                        'favorites'
+                    )
+                    .annotate(
+                        favorite_count=Count('favorites', distinct=True),
+                        review_count=Count('reviews', distinct=True),
+                        avg_rating=Avg('reviews__rating')
+                    )
+                    .get(pk=pk))
+            return shop
+        except Shop.DoesNotExist:
+            from django.http import Http404
+            raise Http404("Shop not found")
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        shop = self.get_object()
+        shop = context['shop']  # get_object()は既に呼ばれている
         
-        # ログイン済みユーザーのお気に入り状態をチェック
+        # アノテーション済みデータを使用（追加クエリなし）
+        context['favorite_count'] = getattr(shop, 'favorite_count', 0)
+        context['review_count'] = getattr(shop, 'review_count', 0)
+        avg_rating = getattr(shop, 'avg_rating', 0) or 0
+        context['avg_rating'] = round(avg_rating, 1)
+        context['avg_rating_int'] = int(avg_rating)
+        
+        # prefetch済みレビューデータを使用（追加クエリなし）
+        reviews = list(shop.reviews.all())
+        context['reviews'] = reviews
+        
+        # ログインユーザー関連：効率化
         if self.request.user.is_authenticated:
-            context['is_favorited'] = Favorite.objects.filter(
-                shop=shop,
-                user=self.request.user
-            ).exists()
+            # prefetch済みお気に入りデータから検索
+            context['is_favorited'] = any(
+                fav.user_id == self.request.user.id for fav in shop.favorites.all()
+            )
+            # prefetch済みレビューから検索
+            context['user_review'] = next(
+                (r for r in reviews if r.user_id == self.request.user.id), None
+            )
         else:
             context['is_favorited'] = False
-            
-        # お気に入り数を追加
-        context['favorite_count'] = shop.favorites.count()
-        
-        # 店舗のカテゴリー情報を追加
-        context['shop_categories'] = shop.categories.select_related('category')
-        
-        # レビュー関連の情報を追加
-        reviews = shop.reviews.select_related('user').order_by('-created_at')
-        context['reviews'] = reviews
-        context['review_count'] = reviews.count()
-        
-        # 平均評価を計算
-        avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
-        context['avg_rating'] = round(avg_rating, 1) if avg_rating else 0
-        context['avg_rating_int'] = int(avg_rating) if avg_rating else 0
-        
-        # ログイン済みユーザーの既存レビューをチェック
-        if self.request.user.is_authenticated:
-            context['user_review'] = shop.reviews.select_related('user').filter(user=self.request.user).first()
-        else:
             context['user_review'] = None
+            
+        # 店舗カテゴリ情報（prefetch済み）
+        context['shop_categories'] = shop.categories.all()
 
         # サブスクリプション状態（予約フォームの表示制御に使用）
         can_reserve = False
@@ -225,13 +268,27 @@ class ShopSearchView(ListView):
                     is_favorited = Favorite.objects.filter(shop=shop, user=self.request.user).exists()
             else:
                 is_favorited = False
+                
+            # メイン画像をprefetch済みデータから取得
+            main_image_url = None
+            if hasattr(shop, '_prefetched_objects_cache') and 'images' in shop._prefetched_objects_cache:
+                images = shop._prefetched_objects_cache['images']
+                if images:
+                    main_image_url = images[0].image.url
+            else:
+                first_image = shop.images.first()
+                if first_image:
+                    main_image_url = first_image.image.url
+                    
             shops_with_favorites.append({
                 'shop': shop,
                 'is_favorited': is_favorited,
                 'favorite_count': favorite_count,
-                'categories': shop.categories.all()
+                'categories': shop.categories.all(),
+                'main_image_url': main_image_url,
             })
         context['shops_with_favorites'] = shops_with_favorites
+        context['categories'] = Category.objects.all()
 
         return context
 
@@ -240,46 +297,108 @@ class ReviewListView(ListView):
     model = Review
     template_name = 'shops/review_list.html'
     context_object_name = 'reviews'
-    paginate_by = 10
+    paginate_by = 20  # ページネーション強化
     ordering = ['-created_at']
 
     def get_queryset(self):
         # 特定の店舗のレビューを取得する場合
         shop_id = self.kwargs.get('shop_pk')
         if shop_id:
-            return Review.objects.filter(shop_id=shop_id).select_related('user', 'shop').order_by('-created_at')
+            return (Review.objects
+                    .filter(shop_id=shop_id)
+                    .select_related('user', 'shop')
+                    .prefetch_related('shop__images')
+                    .order_by('-created_at'))
         
-        # 全店舗のレビュー一覧
-        return Review.objects.select_related('user', 'shop').order_by('-created_at')
+        # 全店舗のレビュー一覧（最適化済み）
+        return (Review.objects
+                .select_related('user', 'shop')
+                .prefetch_related('shop__images')
+                .order_by('-created_at'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # 特定の店舗の場合、店舗情報を追加
+        # 現在のページのレビューのみを処理（ページネーション対応）
+        reviews_with_images = []
+        for review in context['reviews']:  # ページネーション済みレビュー
+            # shop画像をprefetch済みデータから効率的に取得
+            main_image_url = None
+            if hasattr(review.shop, '_prefetched_objects_cache') and 'images' in review.shop._prefetched_objects_cache:
+                images = review.shop._prefetched_objects_cache['images']
+                if images:
+                    main_image_url = images[0].image.url
+            else:
+                # fallback（通常は不要）
+                first_image = review.shop.images.first()
+                if first_image:
+                    main_image_url = first_image.image.url
+            
+            reviews_with_images.append({
+                'review': review,
+                'main_image_url': main_image_url,
+            })
+        
+        context['reviews_with_images'] = reviews_with_images
+        
+        # 特定の店舗の場合のみ、統計情報を追加
         shop_id = self.kwargs.get('shop_pk')
         if shop_id:
             try:
-                shop = Shop.objects.get(pk=shop_id)
+                # 店舗情報を効率的に取得
+                shop = (Shop.objects
+                        .select_related('user')
+                        .prefetch_related('images')
+                        .get(pk=shop_id))
                 context['shop'] = shop
                 
-                # その店舗の統計情報を追加
-                reviews = self.get_queryset()
-                if reviews:
-                    context['review_stats'] = {
-                        'total_count': reviews.count(),
-                        'average_rating': reviews.aggregate(avg=Avg('rating'))['avg'] or 0,
-                        'rating_distribution': {
-                            i: reviews.filter(rating=i).count() for i in range(1, 6)
+                # 統計情報を効率的に計算（該当店舗のレビューのみ）
+                review_stats = (Review.objects
+                                .filter(shop_id=shop_id)
+                                .aggregate(
+                                    total_count=Count('id'),
+                                    average_rating=Avg('rating'),
+                                    rating_1=Count(Case(When(rating=1, then=1))),
+                                    rating_2=Count(Case(When(rating=2, then=1))),
+                                    rating_3=Count(Case(When(rating=3, then=1))),
+                                    rating_4=Count(Case(When(rating=4, then=1))),
+                                    rating_5=Count(Case(When(rating=5, then=1)))
+                                ))
+                
+                context['review_stats'] = {
+                    'total_count': review_stats['total_count'] or 0,
+                    'average_rating': review_stats['average_rating'] or 0,
+                    'rating_distribution': {
+                        1: {
+                            'count': review_stats['rating_1'],
+                            'percentage': (review_stats['rating_1'] * 100 / review_stats['total_count']) if review_stats['total_count'] > 0 else 0
+                        },
+                        2: {
+                            'count': review_stats['rating_2'],
+                            'percentage': (review_stats['rating_2'] * 100 / review_stats['total_count']) if review_stats['total_count'] > 0 else 0
+                        },
+                        3: {
+                            'count': review_stats['rating_3'], 
+                            'percentage': (review_stats['rating_3'] * 100 / review_stats['total_count']) if review_stats['total_count'] > 0 else 0
+                        },
+                        4: {
+                            'count': review_stats['rating_4'],
+                            'percentage': (review_stats['rating_4'] * 100 / review_stats['total_count']) if review_stats['total_count'] > 0 else 0
+                        },
+                        5: {
+                            'count': review_stats['rating_5'],
+                            'percentage': (review_stats['rating_5'] * 100 / review_stats['total_count']) if review_stats['total_count'] > 0 else 0
                         }
                     }
-                else:
-                    context['review_stats'] = {
-                        'total_count': 0,
-                        'average_rating': 0,
-                        'rating_distribution': {i: 0 for i in range(1, 6)}
-                    }
+                }
+                
             except Shop.DoesNotExist:
                 context['shop'] = None
+                context['review_stats'] = {
+                    'total_count': 0,
+                    'average_rating': 0,
+                    'rating_distribution': {i: 0 for i in range(1, 6)}
+                }
         
         return context
 

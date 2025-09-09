@@ -111,44 +111,19 @@
     </div>
 </div>
 
-<!-- フィルターと検索 -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="input-group">
-            <input type="text" class="form-control" placeholder="メール、名前で検索..." id="searchInput" value="{{ request.GET.search }}">
-            <button class="btn btn-outline-secondary apply-filters-btn" type="button">
-                <i class="fas fa-search"></i>
-            </button>
+<!-- 検索 -->
+<form id="searchForm" method="GET" action="">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="メールアドレスで検索..." id="searchInput" name="search" value="{{ current_search }}">
+                <button class="btn btn-outline-secondary" type="submit" id="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <select class="form-select" id="subscriptionFilter">
-            <option value="">すべて</option>
-            <option value="subscribed" {% if request.GET.subscription == 'subscribed' %}selected{% endif %}>有料会員</option>
-            <option value="free" {% if request.GET.subscription == 'free' %}selected{% endif %}>無料会員</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select class="form-select" id="managerFilter">
-            <option value="">すべて</option>
-            <option value="manager" {% if request.GET.manager == 'manager' %}selected{% endif %}>管理者</option>
-            <option value="user" {% if request.GET.manager == 'user' %}selected{% endif %}>一般ユーザー</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select class="form-select" id="sortSelect">
-            <option value="-id" {% if request.GET.sort == '-id' %}selected{% endif %}>登録順（新）</option>
-            <option value="id" {% if request.GET.sort == 'id' %}selected{% endif %}>登録順（旧）</option>
-            <option value="email" {% if request.GET.sort == 'email' %}selected{% endif %}>メール順</option>
-            <option value="-last_login" {% if request.GET.sort == '-last_login' %}selected{% endif %}>最終ログイン</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <button type="button" class="btn btn-outline-secondary w-100 clear-filters-btn">
-            <i class="fas fa-times"></i> クリア
-        </button>
-    </div>
-</div>
+</form>
 
 <!-- ユーザー一覧テーブル -->
 <div class="card">
@@ -359,8 +334,17 @@
 <script>
 // DOM読み込み完了時にイベントリスナーを設定
 document.addEventListener('DOMContentLoaded', function() {
-    setupUserEventListeners();
-    setupFiltersAndSearch();
+    console.log('DOMContentLoaded: ユーザー管理ページ初期化開始');
+    
+    // クリアボタン
+    const clearFilters = document.getElementById('clearFilters');
+    if (clearFilters) {
+        clearFilters.addEventListener('click', function() {
+            console.log('検索クリア');
+            window.location.href = window.location.pathname;
+        });
+    }
+    
     setupBulkActions();
 });
 
@@ -372,6 +356,8 @@ function setupUserEventListeners() {
 
 // フィルターと検索の設定
 function setupFiltersAndSearch() {
+    console.log('setupFiltersAndSearch関数が呼ばれました');
+    
     // フィルター変更時の自動適用
     const subscriptionFilter = document.getElementById('subscriptionFilter');
     const managerFilter = document.getElementById('managerFilter');
@@ -379,22 +365,40 @@ function setupFiltersAndSearch() {
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.querySelector('.apply-filters-btn');
     
+    console.log('要素の取得状況:', {
+        subscriptionFilter: !!subscriptionFilter,
+        managerFilter: !!managerFilter,
+        sortSelect: !!sortSelect,
+        searchInput: !!searchInput,
+        searchButton: !!searchButton
+    });
+    
     if (subscriptionFilter) {
-        subscriptionFilter.addEventListener('change', applyFilters);
+        subscriptionFilter.addEventListener('change', function() {
+            console.log('サブスクリプションフィルター変更');
+            applyFilters();
+        });
     }
     
     if (managerFilter) {
-        managerFilter.addEventListener('change', applyFilters);
+        managerFilter.addEventListener('change', function() {
+            console.log('マネージャーフィルター変更');
+            applyFilters();
+        });
     }
     
     if (sortSelect) {
-        sortSelect.addEventListener('change', applyFilters);
+        sortSelect.addEventListener('change', function() {
+            console.log('ソート変更');
+            applyFilters();
+        });
     }
 
     // 検索フィールドでEnterキー押下時
     if (searchInput) {
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                console.log('検索フィールドでEnterキー押下');
                 applyFilters();
             }
         });
@@ -403,81 +407,11 @@ function setupFiltersAndSearch() {
     // 検索ボタンクリック時
     if (searchButton) {
         searchButton.addEventListener('click', function() {
+            console.log('検索ボタンがクリックされました');
             applyFilters();
         });
-    }
-}
-
-// 一括操作の設定
-function setupBulkActions() {
-    // 全選択チェックボックス
-    const selectAllCheckbox = document.getElementById('selectAll');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const checkboxes = document.querySelectorAll('.user-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            updateBulkActions();
-        });
-    }
-
-    // 個別チェックボックス
-    document.querySelectorAll('.user-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            updateBulkActions();
-        });
-    });
-}
-
-// フィルター適用
-function applyFilters() {
-    const params = new URLSearchParams(window.location.search);
-    
-    const search = document.getElementById('searchInput').value;
-    const subscription = document.getElementById('subscriptionFilter').value;
-    const manager = document.getElementById('managerFilter').value;
-    const sort = document.getElementById('sortSelect').value;
-    
-    // パラメータをクリア
-    params.delete('search');
-    params.delete('subscription');
-    params.delete('manager');
-    params.delete('sort');
-    params.delete('page');
-    
-    // 新しいパラメータを設定
-    if (search) params.set('search', search);
-    if (subscription) params.set('subscription', subscription);
-    if (manager) params.set('manager', manager);
-    if (sort) params.set('sort', sort);
-    
-    window.location.search = params.toString();
-}
-
-// フィルタークリア
-function clearFilters() {
-    window.location.href = window.location.pathname;
-}
-
-function setupBulkActions() {
-    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    const bulkExportBtn = document.getElementById('bulkExportBtn');
-    const clearFiltersBtn = document.querySelector('.clear-filters-btn');
-
-    // 一括削除ボタン
-    if (bulkDeleteBtn) {
-        bulkDeleteBtn.addEventListener('click', bulkDelete);
-    }
-
-    // 一括エクスポートボタン
-    if (bulkExportBtn) {
-        bulkExportBtn.addEventListener('click', bulkExport);
-    }
-
-    // フィルタークリアボタン
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', clearFilters);
+    } else {
+        console.error('検索ボタンが見つかりません');
     }
 }
 

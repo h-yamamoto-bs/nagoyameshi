@@ -45,9 +45,9 @@
                     <!-- 画像ギャラリー -->
                     <!-- =================================== -->
                     <div class="shop-gallery">
-                                                    {% if shop_data.shop.images.exists %}
+                        {% if shop_data.main_image_url %}
                             <div class="image-main">
-                                <img src="{{ shop_data.shop.images.first.image.url|heroku_media_url }}" 
+                                <img src="{{ shop_data.main_image_url|heroku_media_url }}" 
                                      alt="{{ shop_data.shop.name }}"
                                      class="main-image">
                                 <div class="image-overlay">
@@ -55,15 +55,15 @@
                                 </div>
                             </div>
                             
-                                                            {% if shop_data.shop.images.count > 1 %}
+                            {% if shop_data.shop.images.count > 1 %}
                                 <div class="image-thumbnails">
-                                                                            {% for image in shop_data.shop.images.all|slice:"1:5" %}
+                                    {% for image in shop_data.shop.images.all|slice:"1:5" %}
                                         <div class="thumbnail">
                                             <img src="{{ image.image.url|heroku_media_url }}" alt="{{ shop_data.shop.name }}">
                                         </div>
                                     {% endfor %}
                                     
-                                                                            {% if shop_data.shop.images.count > 4 %}
+                                    {% if shop_data.shop.images.count > 4 %}
                                         <div class="thumbnail more-photos">
                                             <span>+{{ shop_data.shop.images.count|add:"-4" }}</span>
                                         </div>
@@ -691,7 +691,9 @@
 // ショップカードアニメーション
 document.addEventListener('DOMContentLoaded', function() {
     // まずFeather Iconsを初期化
-    feather.replace();
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
     
     const shopCards = document.querySelectorAll('.shop-card');
     
@@ -742,7 +744,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Featherアイコンの読み込みを待ってから初期化
     setTimeout(() => {
         // 再度Featherアイコンを置換
-        feather.replace();
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
         
         // 少し待ってから初期化
         setTimeout(() => {
@@ -807,7 +811,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         currentOffset += data.shops.length;
                         
                         // Featherアイコンを先に初期化
-                        feather.replace();
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
                         
                         // お気に入りボタンのイベントリスナーを新しいカードに追加
                         initializeFavoriteButtons();
@@ -835,7 +841,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     isLoading = false;
                     loadMoreBtn.innerHTML = originalText;
                     loadMoreBtn.disabled = false;
-                    feather.replace();
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
                 });
         });
     }
@@ -1109,7 +1117,9 @@ function updateFavoriteButton(btn, isFavorited, favoriteCount) {
     
     // Featherアイコンを再描画（非同期処理として実行）
     setTimeout(() => {
-        feather.replace();
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
         console.log('Feather icons replaced');
     }, 10);
 }

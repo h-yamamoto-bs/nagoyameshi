@@ -9,6 +9,7 @@ from django.db.models import Q, Count, Sum, Avg
 from django.db import models
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
+from django.core.cache import cache
 import csv
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -54,11 +55,32 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 統計情報を取得
-        context['shop_count'] = Shop.objects.count()
-        context['user_count'] = User.objects.filter(manager_flag=False).count()
-        context['category_count'] = Category.objects.count()
         
+        # キャッシュキー
+        cache_key = 'admin_dashboard_stats'
+        stats = cache.get(cache_key)
+        
+        if stats is None:
+            # 統計情報を1クエリで効率的に取得
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 
+                        (SELECT COUNT(*) FROM shops) as shop_count,
+                        (SELECT COUNT(*) FROM auth_user WHERE manager_flag = 0) as user_count,
+                        (SELECT COUNT(*) FROM categories) as category_count
+                """)
+                row = cursor.fetchone()
+                stats = {
+                    'shop_count': row[0],
+                    'user_count': row[1],
+                    'category_count': row[2]
+                }
+            
+            # 5分間キャッシュ
+            cache.set(cache_key, stats, 300)
+        
+        context.update(stats)
         return context
 
 
@@ -98,7 +120,10 @@ class ShopListView(AdminRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = Shop.objects.select_related('user').prefetch_related('categories__category')
+        # N+1問題を避けるため、関連データを事前に取得
+        queryset = Shop.objects.select_related('user').prefetch_related(
+            'categories__category'
+        )
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(name__icontains=search)
@@ -250,25 +275,34 @@ class UserListView(AdminRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = User.objects.filter(manager_flag=False)
+        queryset = User.objects.all()
+        
+        # 検索フィルター（emailのみ）
         search = self.request.GET.get('search')
         if search:
-            # メールアドレスと名前の両方で検索
-            queryset = queryset.filter(
-                Q(email__icontains=search) | Q(name__icontains=search)
-            )
+            # メールアドレスで検索
+            queryset = queryset.filter(email__icontains=search)
+        
         return queryset.order_by('-id')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['total_users'] = User.objects.filter(manager_flag=False).count()
+        
+        # 統計情報を効率的に計算（1クエリで全て取得）
+        user_stats = User.objects.aggregate(
+            total_users=Count('id', filter=models.Q(manager_flag=False)),
+            managers_count=Count('id', filter=models.Q(manager_flag=True))
+        )
+        
+        context.update(user_stats)
         
         # サブスクリプションテーブルがある場合の有料会員数
         try:
             from accounts.models import Subscription
             context['subscribed_users'] = User.objects.filter(
                 manager_flag=False, 
-                subscription__isnull=False
+                subscription__isnull=False,
+                subscription__is_active=True
             ).distinct().count()
         except:
             context['subscribed_users'] = 0
@@ -276,7 +310,9 @@ class UserListView(AdminRequiredMixin, ListView):
         # 新規ユーザー数（今月） - date_joinedがないので0に設定
         context['new_users_this_month'] = 0
         
-        context['managers_count'] = User.objects.filter(manager_flag=True).count()
+        # 現在の検索パラメータを保持
+        context['current_search'] = self.request.GET.get('search', '')
+        
         return context
 
 
@@ -399,19 +435,20 @@ class CategoryListView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # 統計情報を追加
-        categories = Category.objects.annotate(shop_count=Count('shop_categories'))
-        total_categories = categories.count()
-        used_categories = categories.filter(shop_count__gt=0).count()
-        unused_categories = categories.filter(shop_count=0).count()
-        
-        # 平均店舗数を計算
-        avg_shops = categories.aggregate(avg=Avg('shop_count'))['avg'] or 0
+        # 統計情報を効率的に計算（1クエリで全て取得）
+        stats = Category.objects.annotate(
+            shop_count=Count('shop_categories')
+        ).aggregate(
+            total=Count('id'),
+            used=Count('id', filter=models.Q(shop_count__gt=0)),
+            unused=Count('id', filter=models.Q(shop_count=0)),
+            avg_shops=Avg('shop_count')
+        )
         
         context.update({
-            'used_categories_count': used_categories,
-            'unused_categories_count': unused_categories,
-            'avg_shops_per_category': avg_shops,
+            'used_categories_count': stats['used'],
+            'unused_categories_count': stats['unused'],
+            'avg_shops_per_category': stats['avg_shops'] or 0,
         })
         
         return context

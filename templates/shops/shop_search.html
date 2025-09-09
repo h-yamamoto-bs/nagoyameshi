@@ -140,9 +140,9 @@
                             <!-- 画像ギャラリー -->
                             <!-- =================================== -->
                             <div class="shop-gallery">
-                                {% if shop_data.shop.images.exists %}
+                                {% if shop_data.main_image_url %}
                                     <div class="image-main">
-                                        <img src="{{ shop_data.shop.images.first.image.url|heroku_media_url }}" 
+                                        <img src="{{ shop_data.main_image_url|heroku_media_url }}" 
                                              alt="{{ shop_data.shop.name }}"
                                              class="main-image">
                                         <div class="image-overlay">
@@ -1298,7 +1298,9 @@
 
 <script>
 // Feather Icons初期化
-feather.replace();
+if (typeof feather !== 'undefined') {
+    feather.replace();
+}
 
 // 検索フォームの機能
 function clearSearch() {
@@ -1543,8 +1545,10 @@ function updateFavoriteButton(btn, isFavorited, favoriteCount) {
     
     // Featherアイコンを再描画（非同期処理として実行）
     setTimeout(() => {
-        feather.replace();
-        console.log('Feather icons replaced');
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+            console.log('Feather icons replaced');
+        }
     }, 10);
 }
 
@@ -1614,7 +1618,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Featherアイコンの読み込みを待ってから初期化
     setTimeout(() => {
         // 再度Featherアイコンを置換
-        feather.replace();
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
         
         // 少し待ってから初期化
         setTimeout(() => {

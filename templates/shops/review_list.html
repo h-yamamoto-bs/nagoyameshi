@@ -56,48 +56,37 @@
                 </div>
 
                 <!-- 統計情報 -->
-                <div class="review-statistics">
-                    <div class="stats-card">
-                        <div class="stat-item">
-                            <div class="stat-number">{{ review_stats.total_count }}</div>
-                            <div class="stat-label">レビュー数</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-number">{{ review_stats.average_rating|floatformat:1 }}</div>
-                            <div class="stat-label">平均評価</div>
-                        </div>
-                    </div>
-
-                    <!-- 評価分布 -->
-                    <div class="rating-distribution">
-                        <h3 class="distribution-title">評価分布</h3>
-                        <div class="distribution-bars">
-                            {% for rating, count in review_stats.rating_distribution.items %}
-                                <div class="distribution-row">
-                                    <div class="rating-label">
-                                        <span class="rating-number">{{ rating }}</span>
-                                        <i data-feather="star" class="rating-star"></i>
-                                    </div>
-                                    <div class="distribution-bar">
-                                        <div class="bar-fill" 
-                                             style="width: {% widthratio count review_stats.total_count 100 %}%">
-                                        </div>
-                                    </div>
-                                    <div class="rating-count">{{ count }}</div>
-                                </div>
+                {% if review_stats %}
+                <div class="review-stats">
+                    <div class="overall-rating">
+                        <div class="rating-score">{{ review_stats.average_rating|floatformat:1 }}</div>
+                        <div class="rating-stars">
+                            {% for i in "12345" %}
+                                <i data-feather="star" class="star {% if forloop.counter <= review_stats.average_rating %}filled{% endif %}"></i>
                             {% endfor %}
                         </div>
+                        <div class="rating-count">{{ review_stats.total_count }}件のレビュー</div>
+                    </div>
+
+                    <div class="rating-breakdown">
+                        {% for rating, data in review_stats.rating_distribution.items %}
+                        <div class="rating-bar">
+                            <span class="rating-label">{{ rating }}つ星</span>
+                            <div class="bar-container">
+                                <div class="bar-fill" style="width: {{ data.percentage }}%;"></div>
+                            </div>
+                            <span class="rating-count">{{ data.count }}</span>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
+                {% endif %}
             </div>
         {% else %}
-            <!-- 全店舗のレビュー一覧 -->
-            <div class="all-reviews-header">
-                <h1 class="page-title">
-                    <i data-feather="message-square"></i>
-                    全店舗レビュー一覧
-                </h1>
-                <p class="page-description">名古屋の美味しいお店のレビューをご覧ください</p>
+            <!-- 全店舗レビュー一覧 -->
+            <div class="global-review-header">
+                <h1 class="page-title">全店舗レビュー一覧</h1>
+                <p class="page-description">名古屋めしの全店舗から投稿されたレビューをご覧いただけます。</p>
             </div>
         {% endif %}
     </div>
@@ -105,857 +94,140 @@
     <!-- =================================== -->
     <!-- レビュー一覧 -->
     <!-- =================================== -->
-    <div class="reviews-section">
-        {% if reviews %}
-            <div class="reviews-grid">
-                {% for review in reviews %}
-                    <div class="review-card">
-                        <!-- レビューヘッダー -->
-                        <div class="review-card-header">
-                            <div class="reviewer-info">
-                                <div class="reviewer-avatar">
-                                    <i data-feather="user"></i>
-                                </div>
-                                <div class="reviewer-details">
-                                    <div class="reviewer-name">
-                                        {% if review.user %}
-                                            {{ review.user.name|default:review.user.email }}
-                                        {% else %}
-                                            匿名ユーザー
-                                        {% endif %}
-                                    </div>
-                                    <div class="review-date">{{ review.created_at|date:"Y年n月j日" }}</div>
-                                </div>
+    {% if reviews_with_images %}
+        <div class="reviews-grid">
+            {% for review_data in reviews_with_images %}
+                {% with review=review_data.review %}
+                <div class="review-card">
+                    <!-- レビューヘッダー -->
+                    <div class="review-card-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">
+                                <i data-feather="user"></i>
                             </div>
-
-                            <div class="review-rating">
-                                <div class="stars">
-                                    {% for i in "12345" %}
-                                        <i data-feather="star" class="star {% if forloop.counter <= review.rating %}filled{% endif %}"></i>
-                                    {% endfor %}
-                                </div>
-                                <span class="rating-text">{{ review.rating }}.0</span>
-                            </div>
-                        </div>
-
-                        <!-- 店舗情報（全店舗一覧の場合のみ表示） -->
-                        {% if not shop %}
-                            <div class="review-shop-info">
-                                <a href="{% url 'shops:shop_detail' review.shop.pk %}" class="shop-link">
-                                    {% if review.shop.images.exists %}
-                                        <img src="{{ review.shop.images.first.image.url }}" alt="{{ review.shop.name }}" class="shop-mini-thumb">
+                            <div class="reviewer-details">
+                                <div class="reviewer-name">
+                                    {% if review.user %}
+                                        {{ review.user.name|default:review.user.email }}
                                     {% else %}
-                                        <div class="shop-mini-thumb-placeholder">
-                                            <i data-feather="image"></i>
-                                        </div>
+                                        匿名ユーザー
                                     {% endif %}
-                                    <div class="shop-mini-details">
-                                        <h4 class="shop-mini-name">{{ review.shop.name }}</h4>
-                                        <p class="shop-mini-address">{{ review.shop.address }}</p>
+                                </div>
+                                <div class="review-date">{{ review.created_at|date:"Y年n月j日" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="review-rating">
+                            <div class="stars">
+                                {% for i in "12345" %}
+                                    <i data-feather="star" class="star {% if forloop.counter <= review.rating %}filled{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text">{{ review.rating }}.0</span>
+                        </div>
+                    </div>
+
+                    <!-- レビューコメント -->
+                    <div class="review-content">
+                        {% if review.comment %}
+                            <p class="review-comment">{{ review.comment|linebreaks }}</p>
+                        {% else %}
+                            <p class="review-comment-empty">
+                                <i data-feather="message-circle"></i>
+                                コメントなし
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- 店舗情報（全店舗レビュー一覧の場合のみ表示） -->
+                    {% if not shop %}
+                        <div class="review-shop-info">
+                            <a href="{% url 'shops:shop_detail' review.shop.pk %}" class="shop-mini-link">
+                                {% if review_data.main_image_url %}
+                                    <img src="{{ review_data.main_image_url }}" alt="{{ review.shop.name }}" class="shop-mini-thumb">
+                                {% else %}
+                                    <div class="shop-mini-thumb-placeholder">
+                                        <i data-feather="image"></i>
                                     </div>
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        <!-- レビューコメント -->
-                        <div class="review-content">
-                            {% if review.comment %}
-                                <p class="review-comment">{{ review.comment|linebreaks }}</p>
-                            {% else %}
-                                <p class="review-comment-empty">
-                                    <i data-feather="message-circle"></i>
-                                    コメントはありません
-                                </p>
-                            {% endif %}
-                        </div>
-
-                        <!-- レビューフッター -->
-                        <div class="review-card-footer">
-                            <div class="review-actions">
-                                {% if not shop %}
-                                    <a href="{% url 'shops:shop_detail' review.shop.pk %}" class="action-link">
-                                        <i data-feather="external-link"></i>
-                                        店舗詳細を見る
-                                    </a>
                                 {% endif %}
-                                {% if review.updated_at != review.created_at %}
-                                    <span class="review-updated">
-                                        <i data-feather="edit"></i>
-                                        {{ review.updated_at|date:"Y年n月j日" }}更新
-                                    </span>
-                                {% endif %}
-                            </div>
+                                <div class="shop-mini-details">
+                                    <h4 class="shop-mini-name">{{ review.shop.name }}</h4>
+                                    <p class="shop-mini-address">{{ review.shop.address }}</p>
+                                </div>
+                            </a>
                         </div>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <!-- =================================== -->
-            <!-- ページネーション -->
-            <!-- =================================== -->
-            {% if is_paginated %}
-                <div class="pagination-wrapper">
-                    <nav class="pagination">
-                        {% if page_obj.has_previous %}
-                            <a href="?page=1" class="pagination-item first">
-                                <i data-feather="chevrons-left"></i>
-                            </a>
-                            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-item prev">
-                                <i data-feather="chevron-left"></i>
-                                前へ
-                            </a>
-                        {% endif %}
-
-                        <div class="pagination-info">
-                            <span class="page-numbers">
-                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                            </span>
-                        </div>
-
-                        {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}" class="pagination-item next">
-                                次へ
-                                <i data-feather="chevron-right"></i>
-                            </a>
-                            <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-item last">
-                                <i data-feather="chevrons-right"></i>
-                            </a>
-                        {% endif %}
-                    </nav>
-                </div>
-            {% endif %}
-        {% else %}
-            <!-- レビューが存在しない場合 -->
-            <div class="no-reviews">
-                <div class="no-reviews-icon">
-                    <i data-feather="message-square"></i>
-                </div>
-                <h3 class="no-reviews-title">レビューがありません</h3>
-                <p class="no-reviews-description">
-                    {% if shop %}
-                        この店舗にはまだレビューが投稿されていません。<br>
-                        最初のレビューを投稿してみませんか？
-                    {% else %}
-                        まだレビューが投稿されていません。
                     {% endif %}
-                </p>
-                {% if shop %}
-                    <div class="no-reviews-actions">
-                        <a href="{% url 'shops:shop_detail' shop.pk %}" class="btn-primary">
-                            <i data-feather="edit"></i>
-                            レビューを書く
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+
+        <!-- ページネーション -->
+        {% if is_paginated %}
+            <div class="pagination-wrapper">
+                <nav class="pagination">
+                    {% if page_obj.has_previous %}
+                        <a href="?page=1" class="pagination-item first">
+                            <i data-feather="chevrons-left"></i>
                         </a>
+                        <a href="?page={{ page_obj.previous_page_number }}" class="pagination-item prev">
+                            <i data-feather="chevron-left"></i>
+                            前へ
+                        </a>
+                    {% endif %}
+
+                    <div class="pagination-info">
+                        <span class="page-numbers">
+                            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                        </span>
                     </div>
-                {% endif %}
+
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="pagination-item next">
+                            次へ
+                            <i data-feather="chevron-right"></i>
+                        </a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}" class="pagination-item last">
+                            <i data-feather="chevrons-right"></i>
+                        </a>
+                    {% endif %}
+                </nav>
             </div>
         {% endif %}
-    </div>
+    {% else %}
+        <!-- レビューが存在しない場合 -->
+        <div class="no-reviews">
+            <div class="no-reviews-icon">
+                <i data-feather="message-square"></i>
+            </div>
+            <h3 class="no-reviews-title">レビューがありません</h3>
+            <p class="no-reviews-description">
+                {% if shop %}
+                    この店舗にはまだレビューが投稿されていません。<br>
+                    最初のレビューを投稿してみませんか？
+                {% else %}
+                    まだレビューが投稿されていません。
+                {% endif %}
+            </p>
+            {% if shop %}
+                <div class="no-reviews-actions">
+                    <a href="{% url 'shops:shop_detail' shop.pk %}" class="btn-primary">
+                        <i data-feather="edit"></i>
+                        レビューを書く
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
 </div>
 
-<!-- =================================== -->
-<!-- レビュー一覧画面専用CSS -->
-<!-- =================================== -->
-<style>
-/* =================================== */
-/* 基本レイアウト */
-/* =================================== */
-.review-list-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-/* =================================== */
-/* パンくずナビゲーション */
-/* =================================== */
-.breadcrumb {
-    margin-bottom: 2rem;
-}
-
-.breadcrumb-content {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.breadcrumb-item {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--gray-600);
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.3s ease;
-}
-
-.breadcrumb-item:hover {
-    color: var(--primary);
-}
-
-.breadcrumb-item i {
-    width: 1rem;
-    height: 1rem;
-}
-
-.breadcrumb-separator {
-    width: 1rem;
-    height: 1rem;
-    color: var(--gray-400);
-}
-
-.breadcrumb-current {
-    color: var(--gray-800);
-    font-weight: 600;
-    font-size: 0.875rem;
-}
-
-/* =================================== */
-/* ヘッダーセクション */
-/* =================================== */
-.review-header {
-    background: white;
-    border-radius: 1.5rem;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* 特定店舗のレビューヘッダー */
-.shop-review-header {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    align-items: start;
-}
-
-.shop-info-summary {
-    display: flex;
-    gap: 1.5rem;
-    align-items: flex-start;
-}
-
-.shop-thumbnail {
-    width: 100px;
-    height: 100px;
-    border-radius: 1rem;
-    object-fit: cover;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.shop-thumbnail-placeholder {
-    width: 100px;
-    height: 100px;
-    background: var(--gray-200);
-    border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gray-500);
-}
-
-.shop-thumbnail-placeholder i {
-    width: 2.5rem;
-    height: 2.5rem;
-}
-
-.shop-details {
-    flex: 1;
-}
-
-.shop-name {
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: var(--gray-800);
-    margin: 0 0 0.5rem 0;
-}
-
-.shop-address {
-    color: var(--gray-600);
-    margin: 0 0 1rem 0;
-    line-height: 1.5;
-}
-
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    background: var(--gray-100);
-    color: var(--gray-700);
-    text-decoration: none;
-    border-radius: 0.75rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    font-size: 0.875rem;
-}
-
-.btn-back:hover {
-    background: var(--gray-200);
-    color: var(--gray-800);
-}
-
-.btn-back i {
-    width: 1rem;
-    height: 1rem;
-}
-
-/* 統計情報 */
-.review-statistics {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.stats-card {
-    display: flex;
-    gap: 2rem;
-    background: var(--gray-50);
-    padding: 1.5rem;
-    border-radius: 1rem;
-    border: 1px solid var(--gray-200);
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--primary);
-    margin-bottom: 0.25rem;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: var(--gray-600);
-    font-weight: 500;
-}
-
-/* 評価分布 */
-.rating-distribution {
-    background: var(--gray-50);
-    padding: 1.5rem;
-    border-radius: 1rem;
-    border: 1px solid var(--gray-200);
-}
-
-.distribution-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--gray-800);
-    margin: 0 0 1rem 0;
-}
-
-.distribution-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.distribution-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.rating-label {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    min-width: 60px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--gray-700);
-}
-
-.rating-star {
-    width: 1rem;
-    height: 1rem;
-    color: #fbbf24;
-}
-
-.distribution-bar {
-    flex: 1;
-    height: 8px;
-    background: var(--gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
-    transition: width 0.5s ease;
-}
-
-.rating-count {
-    min-width: 30px;
-    text-align: right;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--gray-600);
-}
-
-/* 全店舗レビューヘッダー */
-.all-reviews-header {
-    text-align: center;
-}
-
-.page-title {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    font-size: 2.25rem;
-    font-weight: 800;
-    color: var(--gray-800);
-    margin: 0 0 1rem 0;
-}
-
-.page-title i {
-    width: 2rem;
-    height: 2rem;
-    color: var(--primary);
-}
-
-.page-description {
-    font-size: 1.125rem;
-    color: var(--gray-600);
-    margin: 0;
-}
-
-/* =================================== */
-/* レビュー一覧 */
-/* =================================== */
-.reviews-section {
-    margin-bottom: 2rem;
-}
-
-.reviews-grid {
-    display: grid;
-    gap: 1.5rem;
-}
-
-.review-card {
-    background: white;
-    border-radius: 1.5rem;
-    padding: 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
-}
-
-.review-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* レビューカードヘッダー */
-.review-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1.5rem;
-}
-
-.reviewer-info {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.reviewer-avatar {
-    width: 50px;
-    height: 50px;
-    background: var(--gray-200);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gray-500);
-}
-
-.reviewer-avatar i {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-.reviewer-details {
-    flex: 1;
-}
-
-.reviewer-name {
-    font-weight: 600;
-    color: var(--gray-800);
-    margin-bottom: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.review-date {
-    font-size: 0.75rem;
-    color: var(--gray-500);
-}
-
-.review-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.stars {
-    display: flex;
-    gap: 0.125rem;
-}
-
-.star {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: var(--gray-300);
-}
-
-.star.filled {
-    color: #fbbf24;
-}
-
-.rating-text {
-    font-weight: 600;
-    color: var(--gray-700);
-    font-size: 0.875rem;
-}
-
-/* 店舗情報（全店舗一覧用） */
-.review-shop-info {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: var(--gray-50);
-    border-radius: 1rem;
-    border: 1px solid var(--gray-200);
-}
-
-.shop-link {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-}
-
-.shop-link:hover {
-    transform: translateX(4px);
-}
-
-.shop-mini-thumb {
-    width: 60px;
-    height: 60px;
-    border-radius: 0.75rem;
-    object-fit: cover;
-}
-
-.shop-mini-thumb-placeholder {
-    width: 60px;
-    height: 60px;
-    background: var(--gray-200);
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--gray-500);
-}
-
-.shop-mini-thumb-placeholder i {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-.shop-mini-details {
-    flex: 1;
-}
-
-.shop-mini-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--gray-800);
-    margin: 0 0 0.25rem 0;
-}
-
-.shop-mini-address {
-    font-size: 0.875rem;
-    color: var(--gray-600);
-    margin: 0;
-}
-
-/* レビューコンテンツ */
-.review-content {
-    margin-bottom: 1.5rem;
-}
-
-.review-comment {
-    color: var(--gray-700);
-    line-height: 1.6;
-    margin: 0;
-    font-size: 0.875rem;
-}
-
-.review-comment-empty {
-    color: var(--gray-500);
-    font-style: italic;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    font-size: 0.875rem;
-}
-
-.review-comment-empty i {
-    width: 1rem;
-    height: 1rem;
-}
-
-/* レビューカードフッター */
-.review-card-footer {
-    border-top: 1px solid var(--gray-200);
-    padding-top: 1rem;
-}
-
-.review-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.action-link {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--primary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-
-.action-link:hover {
-    color: var(--primary-dark);
-}
-
-.action-link i {
-    width: 1rem;
-    height: 1rem;
-}
-
-.review-updated {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.75rem;
-    color: var(--gray-500);
-}
-
-.review-updated i {
-    width: 0.875rem;
-    height: 0.875rem;
-}
-
-/* =================================== */
-/* レビューが無い場合 */
-/* =================================== */
-.no-reviews {
-    text-align: center;
-    padding: 4rem 2rem;
-    background: white;
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.no-reviews-icon {
-    width: 5rem;
-    height: 5rem;
-    background: var(--gray-100);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-    color: var(--gray-500);
-}
-
-.no-reviews-icon i {
-    width: 2.5rem;
-    height: 2.5rem;
-}
-
-.no-reviews-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--gray-800);
-    margin: 0 0 1rem 0;
-}
-
-.no-reviews-description {
-    color: var(--gray-600);
-    margin: 0 0 2rem 0;
-    line-height: 1.6;
-}
-
-.no-reviews-actions {
-    display: flex;
-    justify-content: center;
-}
-
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.875rem 1.5rem;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    text-decoration: none;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
-}
-
-.btn-primary i {
-    width: 1rem;
-    height: 1rem;
-}
-
-/* =================================== */
-/* ページネーション */
-/* =================================== */
-.pagination-wrapper {
-    display: flex;
-    justify-content: center;
-    margin-top: 3rem;
-}
-
-.pagination {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: white;
-    padding: 1rem 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.pagination-item {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    background: var(--gray-100);
-    color: var(--gray-700);
-    text-decoration: none;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.pagination-item:hover {
-    background: var(--primary);
-    color: white;
-}
-
-.pagination-item i {
-    width: 1rem;
-    height: 1rem;
-}
-
-.pagination-info {
-    margin: 0 1rem;
-}
-
-.page-numbers {
-    font-weight: 600;
-    color: var(--gray-700);
-    font-size: 0.875rem;
-}
-
-/* =================================== */
-/* レスポンシブデザイン */
-/* =================================== */
-@media (max-width: 1024px) {
-    .shop-review-header {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-    
-    .stats-card {
-        justify-content: center;
-    }
-}
-
-@media (max-width: 768px) {
-    .review-list-container {
-        padding: 1rem;
-    }
-    
-    .review-header {
-        padding: 1.5rem;
-    }
-    
-    .shop-info-summary {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .review-card {
-        padding: 1.5rem;
-    }
-    
-    .review-card-header {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: flex-start;
-    }
-    
-    .review-rating {
-        align-self: flex-end;
-    }
-    
-    .stats-card {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
-    
-    .distribution-row {
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .page-title {
-        font-size: 1.75rem;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .pagination {
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        padding: 0.75rem 1rem;
-    }
-    
-    .pagination-item {
-        padding: 0.375rem 0.5rem;
-        font-size: 0.75rem;
-    }
-}
-</style>
-
+<!-- JavaScript -->
 <script>
-// Feather Icons初期化
-feather.replace();
+document.addEventListener('DOMContentLoaded', function() {
+    // Feather icons初期化
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
 </script>
 {% endblock %}

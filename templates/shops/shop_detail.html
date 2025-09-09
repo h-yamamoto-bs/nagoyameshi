@@ -1543,7 +1543,9 @@ try {
 let currentImageIndex = 0;
 
 // Feather Icons初期化
-feather.replace();
+if (typeof feather !== 'undefined') {
+    feather.replace();
+}
 
 // 有料会員フラグ: 後段のPAGE_FLAGSで定義されます
 
@@ -1893,7 +1895,9 @@ function handleReviewSubmit(e) {
         // ボタンを元に戻す
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
-        feather.replace();
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
     });
 }
 
@@ -2098,8 +2102,10 @@ function updateFavoriteButton(isFavorited, favoriteCount) {
     
     // Featherアイコンを再描画
     try {
-        feather.replace();
-        console.log('Feather icons replaced successfully');
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+            console.log('Feather icons replaced successfully');
+        }
     } catch (featherError) {
         console.error('Feather replace error:', featherError);
     }
