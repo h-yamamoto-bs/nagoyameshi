@@ -69,6 +69,14 @@
                 新規登録
             </a>
         </div>
+
+        <!-- 管理者ログイン案内 -->
+        <div class="admin-login-prompt">
+            <a href="{% url 'admin_panel:login' %}" class="btn-admin">
+                <i data-feather="shield"></i>
+                管理者はこちら
+            </a>
+        </div>
     </div>
 </div>
 
@@ -252,6 +260,38 @@
     transform: translateY(-1px);
 }
 
+/* 管理者ログインボタン */
+.admin-login-prompt {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.btn-admin {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #2d3748;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-admin:hover {
+    background: #1a202c;
+    transform: translateY(-1px);
+    color: white;
+}
+
+.btn-admin i {
+    width: 16px;
+    height: 16px;
+}
+
 /* レスポンシブ */
 @media (max-width: 480px) {
     .login-container {
@@ -302,6 +342,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Featherアイコンを初期化
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
     const form = document.getElementById('loginForm');
     const submitBtn = form.querySelector('.btn-login');
     
