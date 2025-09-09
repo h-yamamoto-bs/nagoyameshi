@@ -22,23 +22,64 @@ from .models import CompanyInfo
 class AdminRequiredMixin(UserPassesTestMixin):
     """管理者権限が必要なビューのベースクラス"""
     def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.manager_flag
+        user = self.request.user
+        # デバッグ用ログ（本番環境では削除予定）
+        if hasattr(user, 'email'):
+            print(f"AdminRequiredMixin check - User: {user.email}, authenticated: {user.is_authenticated}, manager_flag: {getattr(user, 'manager_flag', None)}")
+        
+        return (user.is_authenticated and 
+                hasattr(user, 'manager_flag') and 
+                user.manager_flag)
     
     def handle_no_permission(self):
-        return redirect('admin_panel:login')
+        # セッションをクリアしてリダイレクトループを防ぐ
+        if hasattr(self.request, 'session'):
+            self.request.session.flush()
+        
+        if not self.request.user.is_authenticated:
+            # 未認証ユーザーは管理者ログイン画面へ
+            return redirect('admin_panel:login')
+        else:
+            # 認証済みだが管理者権限なしの場合、メッセージを表示してログアウト
+            messages.error(self.request, '管理者権限が必要です。一般ユーザーアカウントではアクセスできません。')
+            from django.contrib.auth import logout
+            logout(self.request)
+            return redirect('admin_panel:login')
 
 
 class AdminLoginView(LoginView):
     """管理者ログイン"""
     template_name = 'admin_panel/login.html'
-    redirect_authenticated_user = True
+    redirect_authenticated_user = False  # リダイレクトループを防ぐため無効化
+    
+    def dispatch(self, request, *args, **kwargs):
+        # デバッグ用ログ
+        user = request.user
+        if hasattr(user, 'email'):
+            print(f"AdminLoginView dispatch - User: {user.email}, authenticated: {user.is_authenticated}, manager_flag: {getattr(user, 'manager_flag', None)}")
+        
+        # 認証済みかつ管理者権限があるユーザーは dashboard にリダイレクト
+        if (user.is_authenticated and 
+            hasattr(user, 'manager_flag') and 
+            user.manager_flag):
+            print(f"Redirecting authenticated admin user to dashboard")
+            return redirect('admin_panel:dashboard')
+        
+        # 認証済みだが管理者権限がないユーザーはログアウトしてからログイン画面表示
+        elif user.is_authenticated:
+            print(f"Logging out non-admin user: {user.email}")
+            from django.contrib.auth import logout
+            logout(request)
+            messages.info(request, 'ログアウトしました。管理者アカウントでログインしてください。')
+        
+        return super().dispatch(request, *args, **kwargs)
     
     def get_success_url(self):
         return reverse_lazy('admin_panel:dashboard')
     
     def form_valid(self, form):
         user = form.get_user()
-        if not user.manager_flag:
+        if not hasattr(user, 'manager_flag') or not user.manager_flag:
             messages.error(self.request, '管理者権限がありません。')
             return self.form_invalid(form)
         return super().form_valid(form)
@@ -52,6 +93,16 @@ class AdminLogoutView(LogoutView):
 class AdminDashboardView(AdminRequiredMixin, TemplateView):
     """管理者ダッシュボード"""
     template_name = 'admin_panel/dashboard.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # 二重チェック：認証状態を再確認
+        user = request.user
+        if not (user.is_authenticated and hasattr(user, 'manager_flag') and user.manager_flag):
+            print(f"Dashboard access denied - User: {getattr(user, 'email', 'Anonymous')}, authenticated: {user.is_authenticated}, manager_flag: {getattr(user, 'manager_flag', None)}")
+            messages.error(request, '管理者ダッシュボードへのアクセスが拒否されました。')
+            return redirect('admin_panel:login')
+        
+        return super().dispatch(request, *args, **kwargs)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
